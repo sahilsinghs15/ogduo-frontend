@@ -64,11 +64,11 @@ export default function PeoplePosts({
   useEffect(() => {
     getLazyPost({ id, take: 20, skip })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         setPosts(e.posts);
         setSkip(e.posts?.length);
       })
-      .catch((e) => {
+      .catch((e:any) => {
         // dispatch(
         //   openToast({ text: "couldn't get recent posts", type: "Failed" })
         // );
@@ -79,14 +79,14 @@ export default function PeoplePosts({
     if (!noMore && !postRes.error)
       getLazyPost({ take: 20, skip, id })
         .unwrap()
-        .then((e) => {
+        .then((e:any) => {
           setSkip(skip + e.posts.length);
 
           if (e.posts.length === 0) {
             setNoMore(true);
           }
         })
-        .catch((e) => {
+        .catch((e:any) => {
           // dispatch(
           //   openToast({ text: "couldn't get recent posts", type: "Failed" })
           // );

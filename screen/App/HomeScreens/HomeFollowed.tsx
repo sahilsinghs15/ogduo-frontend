@@ -79,14 +79,14 @@ export default function HomeFollowed() {
     setRefreshing(false),
       getLazyPost({ take: 20, skip })
         .unwrap()
-        .then((e) => {
+        .then((e:any) => {
           setSkip(skip + e.posts.length);
 
           if (e.posts.length === 0) {
             setNoMore(true);
           }
         })
-        .catch((e) => {
+        .catch((e:any) => {
           // dispatch(
           //   openToast({ text: "couldn't get recent posts", type: "Failed" })
           // );
@@ -128,10 +128,10 @@ export default function HomeFollowed() {
   useEffect(() => {
     getLazyPost({ take: 20, skip })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         setSkip(e.posts?.length);
       })
-      .catch((e) => {
+      .catch((e:any) => {
         // dispatch(
         //   openToast({ text: "couldn't get recent posts", type: "Failed" })
         // );
@@ -142,14 +142,14 @@ export default function HomeFollowed() {
     if (!noMore)
       getLazyPost({ take: 20, skip })
         .unwrap()
-        .then((e) => {
+        .then((e:any) => {
           setSkip(skip + e.posts.length);
 
           if (e.posts.length === 0) {
             setNoMore(true);
           }
         })
-        .catch((e) => {
+        .catch((e:any) => {
           // dispatch(
           //   openToast({ text: "couldn't get recent posts", type: "Failed" })
           // );
@@ -160,10 +160,10 @@ export default function HomeFollowed() {
     setNoMore(false);
     getLazyPost({ take: 10, skip: 0 })
       .unwrap()
-      .then((r) => {
+      .then((r:any) => {
         setRefreshing(false);
       })
-      .catch((e) => {
+      .catch((e:any) => {
         setRefreshing(false);
         // dispatch(
         //   openToast({ text: "couldn't get recent posts", type: "Failed" })

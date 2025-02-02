@@ -89,8 +89,8 @@ export default function Main() {
   useGetUserQuery(null);
   useEffect(() => {
     getAllChats(null)
-      .then((e) => {})
-      .catch((e) => e);
+      .then((e:any) => {})
+      .catch((e:any) => e);
   }, []);
 
   useEffect(() => {

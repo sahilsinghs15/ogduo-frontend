@@ -53,10 +53,10 @@ export default function PostScreen({ navigation, route }: ViewPost) {
     if (params.id) {
       getComments({ id: params.id })
         .unwrap()
-        .then((r) => {
+        .then((r:any) => {
           setComments(r.comment);
         })
-        .catch((e) => {
+        .catch((e:any) => {
           dispatch(
             openToast({ text: "Failed to get Comments", type: "Failed" })
           );
@@ -65,10 +65,10 @@ export default function PostScreen({ navigation, route }: ViewPost) {
       if (singlePostResponse.data?.posts)
         getComments({ id: singlePostResponse.data?.posts.id })
           .unwrap()
-          .then((r) => {
+          .then((r:any) => {
             setComments(r.comment);
           })
-          .catch((e) => {
+          .catch((e:any) => {
             dispatch(
               openToast({ text: "Failed to get Comments", type: "Failed" })
             );
@@ -78,7 +78,7 @@ export default function PostScreen({ navigation, route }: ViewPost) {
 
   useEffect(() => {
     if (!params?.id) {
-      getSinglePost({ id: params?.postId as string }).then((e) => {
+      getSinglePost({ id: params?.postId as string }).then((e:any) => {
         console.log(e);
       });
     }
@@ -142,7 +142,7 @@ export default function PostScreen({ navigation, route }: ViewPost) {
               <FullScreenPost
                   id={singlePostResponse.data?.posts.id}
                   isReposted={singlePostResponse.data?.posts?.repostUser?.find(
-                    (repostUser) => repostUser?.id === user?.id
+                    (repostUser:any) => repostUser?.id === user?.id
                   )
                     ? true
                     : false}
@@ -151,7 +151,7 @@ export default function PostScreen({ navigation, route }: ViewPost) {
                   comments={singlePostResponse.data?.posts._count?.comments}
                   like={singlePostResponse.data?.posts._count?.like}
                   isLiked={singlePostResponse.data?.posts?.like?.find(
-                    (like) => like?.userId === user?.id
+                    (like:any) => like?.userId === user?.id
                   )
                     ? true
                     : false}

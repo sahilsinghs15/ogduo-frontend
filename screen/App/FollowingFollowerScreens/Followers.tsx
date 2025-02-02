@@ -18,11 +18,11 @@ export default function Followers() {
   useEffect(() => {
     getLazyFollowers({ take: 20, skip })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         setData(e);
         setSkip(e.length);
       })
-      .catch((e) => {});
+      .catch((e:any) => {});
   }, []);
 
   const renderItem = ({ item }: { item: FollowData }) => {
@@ -41,7 +41,7 @@ export default function Followers() {
     if (!noMore && !followersResponse.isError && skip > 0)
       getLazyFollowers({ take: 10, skip })
         .unwrap()
-        .then((r) => {
+        .then((r:any) => {
           setSkip(skip + r.length);
           setData((prev) => [...prev, ...r]);
 

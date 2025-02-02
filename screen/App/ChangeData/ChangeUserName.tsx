@@ -76,7 +76,7 @@ export default function ChangeUserName() {
   const onSubmit = (data: { userName: string; password: string }) => {
     updateData(data)
       .unwrap()
-      .then((r) => {
+      .then((r:any) => {
         dispatch(openToast({ text: r.msg, type: "Success" }));
       })
       .catch((e: any) => {

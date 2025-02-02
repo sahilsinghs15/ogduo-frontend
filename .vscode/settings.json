@@ -1,3 +1,7 @@
 {
-  "cSpell.words": ["reposting"]
+  "cSpell.words": [
+    "reposting"
+  ],
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

@@ -59,11 +59,11 @@ export default function MyPosts({ onScroll }: { onScroll: ScrollHandlerProcessed
   useEffect(() => {
     getLazyPost({ take: 10, skip })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         setPosts(e.posts);
         setSkip(e.posts?.length);
       })
-      .catch((e) => {
+      .catch((e:any) => {
         // dispatch(
         //   openToast({ text: "couldn't get recent posts", type: "Failed" })
         // );
@@ -76,7 +76,7 @@ export default function MyPosts({ onScroll }: { onScroll: ScrollHandlerProcessed
     if (!noMore && !postRes.error && skip > 0)
       getLazyPost({ take: 10, skip })
         .unwrap()
-        .then((e) => {
+        .then((e:any) => {
           console.log("🚀 ~ file: MyPosts.tsx:73 ~ .then ~ e:", e.posts.length);
           setIsLoading(false);
           setPosts((prev) => [...prev, ...e.posts]);
@@ -86,7 +86,7 @@ export default function MyPosts({ onScroll }: { onScroll: ScrollHandlerProcessed
             setNoMore(true);
           }
         })
-        .catch((e) => {
+        .catch((e:any) => {
           setIsLoading(false);
           // dispatch(
           //   openToast({ text: "couldn't get recent posts", type: "Failed" })
@@ -96,7 +96,7 @@ export default function MyPosts({ onScroll }: { onScroll: ScrollHandlerProcessed
 
   const [deletePostById] = useDeletePostByIdMutation();
   const deletePost = (id: string) => {
-    deletePostById({ id }).then((e) => console.log(e));
+    deletePostById({ id }).then((e:any) => console.log(e));
     setPosts((prev) => [...prev.filter((prev) => prev.id !== id)]);
   };
   

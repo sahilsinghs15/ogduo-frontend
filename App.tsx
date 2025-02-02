@@ -1,4 +1,6 @@
+import { setImmediate } from 'timers';
 import "react-native-gesture-handler";
+// import 'react-native-polyfill-globals/auto';
 import "react-native-get-random-values";
 import { StatusBar } from "expo-status-bar";
 import React, {
@@ -13,6 +15,7 @@ import {
   View,
   Platform,
 } from "react-native";
+
 import { NavigationContainer } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";

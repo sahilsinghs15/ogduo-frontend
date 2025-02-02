@@ -55,13 +55,13 @@ export const DeleteAccountModal = ({
     }
     deleteAccount({ password })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         dispatch(resetPost());
         dispatch(signOut());
         dispatch(clearAllChatData());
         dispatch(resetFollowers());
       })
-      .catch((e) => {
+      .catch((e:any) => {
         setErrorMsg(e.data?.msg);
       });
   };

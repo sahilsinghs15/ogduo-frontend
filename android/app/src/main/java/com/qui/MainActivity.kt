@@ -1,4 +1,4 @@
-package me.isaacojo.qui
+package com.qui
 
 import android.os.Build
 import android.os.Bundle

@@ -90,11 +90,11 @@ export default function Register({ navigation }: RegisterScreen) {
   }) => {
     registerUser(data)
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         dispatch(openToast({ type: "Success", text: "Successfully Created" }));
         navigation.replace("Login");
       })
-      .catch((e) => {
+      .catch((e:any) => {
         dispatch(openToast({ type: "Failed", text: e?.data.message }));
       });
   };

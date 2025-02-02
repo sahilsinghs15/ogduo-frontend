@@ -74,12 +74,12 @@ export default function Login({ navigation }: LoginScreen) {
     // servicesApi.util.resetApiState();
     login({ userName: data.userName.trim(), password: data.password })
       .unwrap()
-      .then((e) => {
+      .then((e:any) => {
         Vibration.vibrate(5);
 
         dispatch(openToast({ text: "Successful Login", type: "Success" }));
       })
-      .catch((e) => {
+      .catch((e:any) => {
         console.log(e);
         Vibration.vibrate(5);
         if (e?.data?.msg) {

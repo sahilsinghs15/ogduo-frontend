@@ -115,7 +115,7 @@ export default function ChatScreen({ navigation, route }: ChatScreenProp) {
   useMemo(() => {
     if (route.params?.chatId) {
       socket?.emit("chat", route.params?.chatId);
-      getAllMessages({ id: route.params?.chatId }).then((r) => {
+      getAllMessages({ id: route.params?.chatId }).then((r:any) => {
         if (!r?.data?.chatList) {
           return;
         }
@@ -347,7 +347,7 @@ export default function ChatScreen({ navigation, route }: ChatScreenProp) {
           chatId: route?.params?.id || (route.params.chatId as string),
         });
       })
-      .catch((e) => {
+      .catch((e:any) => {
         e;
       });
   }

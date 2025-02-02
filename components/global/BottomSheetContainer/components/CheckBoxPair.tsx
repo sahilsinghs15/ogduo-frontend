@@ -4,6 +4,7 @@ import { useAppDispatch } from "../../../../redux/hooks/hooks";
 import { setMode } from "../../../../redux/slice/prefs";
 import useGetMode from "../../../../hooks/GetMode";
 
+
 export default function CheckBoxPair({
   text,
   type,

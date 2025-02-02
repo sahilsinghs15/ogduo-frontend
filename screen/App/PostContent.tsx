@@ -199,11 +199,11 @@ export default function PostContent({ navigation }: PostContentProp) {
       setDone(false);
       photo(postPhoto)
         .unwrap()
-        .then((r) => {
+        .then((r:any) => {
           setDone(true);
           setPhotoServer(r.photo);
         })
-        .catch((e) => {
+        .catch((e:any) => {
           setDone(true);
 
           dispatch(openToast({ text: "Photo didn't upload", type: "Failed" }));
@@ -217,11 +217,11 @@ export default function PostContent({ navigation }: PostContentProp) {
       setDone(false);
       audio(postAudio)
         .unwrap()
-        .then((r) => {
+        .then((r:any) => {
           setDone(true);
           setFTServer(r.audio);
         })
-        .catch((e) => {
+        .catch((e:any) => {
           console.log("🚀 ~ file: PostContent.tsx:206 ~ useEffect ~ e:", e);
           setDone(true);
 
@@ -232,14 +232,14 @@ export default function PostContent({ navigation }: PostContentProp) {
       setDone(false);
       video(postPhoto)
         .unwrap()
-        .then((r) => {
+        .then((r:any) => {
           console.log("🚀 ~ file: PostContent.tsx:229 ~ .then ~ r:", r)
 
           setDone(true);
           setFTServer(r.video);
           setVideoThumbnail(r.thumbNail);
         })
-        .catch((e) => {
+        .catch((e:any) => {
           console.log("🚀 ~ file: PostContent.tsx:236 ~ useEffect ~ e:", e)
 
           setDone(true);
@@ -266,14 +266,14 @@ export default function PostContent({ navigation }: PostContentProp) {
           },
           postText,
         })
-          .then((e) => {
+          .then((e:any) => {
             dispatch(
               openToast({ text: "Successfully posted", type: "Success" })
             );
             navigation.pop();
             dispatch(closeLoadingModal());
           })
-          .catch((e) => {
+          .catch((e:any):any => {
             dispatch(openToast({ text: "Post failed ", type: "Failed" }));
             dispatch(closeLoadingModal());
           });
@@ -291,14 +291,14 @@ export default function PostContent({ navigation }: PostContentProp) {
       if (fileToServer) {
         dispatch(openLoadingModal());
         postContent({ audioUri: fileToServer, postText, audioTitle: "Audio" })
-          .then((e) => {
+          .then((e:any) => {
             dispatch(
               openToast({ text: "Successfully posted", type: "Success" })
             );
             navigation.pop();
             dispatch(closeLoadingModal());
           })
-          .catch((e) => {
+          .catch((e:any) => {
             dispatch(openToast({ text: "Post failed ", type: "Failed" }));
             dispatch(closeLoadingModal());
           });
@@ -321,14 +321,14 @@ export default function PostContent({ navigation }: PostContentProp) {
           videoThumbnail,
           postText,
         })
-          .then((e) => {
+          .then((e:any) => {
             dispatch(
               openToast({ text: "Successfully posted", type: "Success" })
             );
             navigation.pop();
             dispatch(closeLoadingModal());
           })
-          .catch((e) => {
+          .catch((e:any) => {
             dispatch(openToast({ text: "Post failed ", type: "Failed" }));
             dispatch(closeLoadingModal());
           });
@@ -344,12 +344,12 @@ export default function PostContent({ navigation }: PostContentProp) {
     if (postText && !postAudio && !postPhoto) {
       dispatch(openLoadingModal());
       postContent({ postText })
-        .then((e) => {
+        .then((e:any) => {
           dispatch(openToast({ text: "Successfully posted", type: "Success" }));
           navigation.pop();
           dispatch(closeLoadingModal());
         })
-        .catch((e) => {
+        .catch((e:any) => {
           dispatch(openToast({ text: "Post failed ", type: "Failed" }));
           dispatch(closeLoadingModal());
         });

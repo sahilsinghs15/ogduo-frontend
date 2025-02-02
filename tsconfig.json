@@ -7,6 +7,10 @@
     "target": "esnext",
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
-  }
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"], // Ensures Node.js global types are included
+    "typeRoots": ["./node_modules/@types", "./types"] // Custom types location
+  },
+  "include": ["types/**/*", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }
