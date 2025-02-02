@@ -1,6 +1,6 @@
 import { setImmediate } from 'timers';
 import "react-native-gesture-handler";
-// import 'react-native-polyfill-globals/auto';
+import 'react-native-polyfill-globals/auto';
 import "react-native-get-random-values";
 import { StatusBar } from "expo-status-bar";
 import React, {
@@ -43,6 +43,9 @@ import OnboardNavigation from "./routes/OnBoard";
 import Main from "./routes/Main";
 import Auth from "./routes/Auth";
 
+if (typeof globalThis.setImmediate === "undefined") {
+  globalThis.setImmediate = setImmediate;
+}
 enableFreeze(true);
 
 Sentry.init({
