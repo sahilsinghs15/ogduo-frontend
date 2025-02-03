@@ -1,4 +1,5 @@
-import { setImmediate } from 'timers';
+const setImmediate = global.setImmediate || ((fn: () => void) => setTimeout(fn, 0));
+
 import "react-native-gesture-handler";
 import 'react-native-polyfill-globals/auto';
 import "react-native-get-random-values";
@@ -43,9 +44,6 @@ import OnboardNavigation from "./routes/OnBoard";
 import Main from "./routes/Main";
 import Auth from "./routes/Auth";
 
-if (typeof globalThis.setImmediate === "undefined") {
-  globalThis.setImmediate = setImmediate;
-}
 enableFreeze(true);
 
 Sentry.init({

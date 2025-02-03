@@ -25,27 +25,49 @@ npm install  # or yarn install
 Manually update specific dependencies for better compatibility:
 
 ```sh
-npm install expo@^52.0.28 \
-            expo-av@^15.0.1 \
-            expo-constants@^17.0.1 \
-            expo-device@^7.0.1 \
-            expo-router@^3.4.10
+npm install expo@^52.0.0 \
+            expo-av@^13.10.0 \
+            expo-constants@^15.4.5 \
+            expo-device@^5.9.3 \
+            expo-router@^3.4.8 \
+            react@18.2.0 \
+            react-native@0.73.4 \
+            react-dom@18.2.0 \
+            @types/react@~18.2.45 \
+            typescript@^5.3.0 \
+            @babel/core@^7.20.0
 ```
 
-## 🩺 Step 5: Check for Issues
+## 🎯 Step 5: Install Additional Required Dependencies
+Install peer dependencies and essential packages:
+
+```sh
+npm install expo-status-bar@~1.11.1 \
+            @expo/vector-icons@^14.0.0 \
+            @react-navigation/native@^6.1.9 \
+            @react-navigation/stack@^6.3.20
+```
+
+## 🩺 Step 6: Check for Issues
 Run Expo Doctor to verify everything is correctly installed:
 
 ```sh
-expo doctor
+npx expo-doctor
 ```
 
-## 🔁 Step 6: Restart Metro Bundler with Cache Clearing
-Finally, restart Expo with cache clearing:
+## 🔁 Step 7: Restart Metro Bundler with Cache Clearing
+Clear cache and restart Expo:
 
 ```sh
-expo r -c
+npx expo start --clear
 ```
 
 ## ✅ Done!
 Your project is now updated and ready to run with Expo SDK 52! 🚀
+
+### 📝 Notes:
+- These versions are compatible with Expo SDK 52 and the latest Android SDK
+- If you encounter any TypeScript errors, you may need to update your tsconfig.json
+- Make sure your Android SDK is up to date in Android Studio
+- For iOS development, ensure you have the latest Xcode installed
 
