@@ -1,8 +1,11 @@
 import { View, Text, Pressable } from "react-native";
 import React from "react";
 import { CameraIcon } from "../icons";
-import ImagePicker from "react-native-image-crop-picker";
+import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
+import { useAppDispatch } from "../../redux/hooks/hooks";
+import { openToast } from "../../redux/slice/toast/toast";
+
 export default function PickImageButton({
   handleSetPhotoPost,
 }: {
@@ -10,17 +13,44 @@ export default function PickImageButton({
 }) {
   const dark = useGetMode();
   const borderColor = dark ? "white" : "black";
-
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
+  const dispatch = useAppDispatch();
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.3,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        handleSetPhotoPost(
+          asset.mimeType || 'image/jpeg',
+          asset.uri,
+          asset.fileSize || 0
+        );
+      }
+    } catch (error) {
+      dispatch(openToast({ text: "Failed to select image", type: "Failed" }));
+    }
+  };
+
   return (
     <View
       style={{
         borderColor,
         borderWidth: 1,
         width: 100,
-
         borderStyle: "dashed",
-
         backgroundColor: "#FFFFFF00",
         borderRadius: 10,
         overflow: "hidden",
@@ -30,27 +60,7 @@ export default function PickImageButton({
       }}
     >
       <Pressable
-        onPress={() => {
-          ImagePicker.openPicker({
-            cropping: true,
-            cropperStatusBarColor: "#000000",
-            cropperToolbarColor: "#000000",
-            showCropGuidelines: false,
-            cropperTintColor: "red",
-            width: 500,
-            height: 500,
-            cropperActiveWidgetColor: "red",
-
-            cropperToolbarWidgetColor: "#FFFFFF",
-            cropperCancelText: "#FFFFFF",
-            cropperChooseColor: "#FFFFFF",
-            compressImageQuality: 0.3,
-          })
-            .then((image) => {
-              handleSetPhotoPost(image?.mime, image?.path, image?.size);
-            })
-            .catch((e) => {});
-        }}
+        onPress={pickImage}
         android_ripple={{ color: rippleColor, foreground: true }}
         style={{
           width: 100,
@@ -68,7 +78,7 @@ export default function PickImageButton({
           }}
         >
           <CameraIcon size={20} color={borderColor} />
-          <Text style={{ fontFamily: "jakaraBold",color:borderColor }}>Upload</Text>
+          <Text style={{ fontFamily: "jakaraBold", color: borderColor }}>Upload</Text>
         </View>
       </Pressable>
     </View>

@@ -1,8 +1,11 @@
 import { View, Text, Pressable } from "react-native";
 import React from "react";
 import { CameraIcon } from "../icons";
-import ImagePicker from "react-native-image-crop-picker";
+import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
+import { useDispatch } from "react-redux";
+import { openToast } from "../../redux/slice/toast/toast";
+
 export default function PickImageButton({
   handleSetPhotoPost,
 }: {
@@ -12,6 +15,33 @@ export default function PickImageButton({
   const backgroundColor = dark ? "white" : "black";
   const backgroundColorView = !dark ? "white" : "black";
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
+  const dispatch = useDispatch();
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      dispatch(openToast({ text: "Permission denied", type: "Failed" }));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      handleSetPhotoPost(
+        asset.mimeType || 'image/jpeg',
+        asset.uri,
+        asset.fileSize || 0
+      );
+    }
+  };
+
   return (
     <View
       style={{
@@ -27,25 +57,7 @@ export default function PickImageButton({
       }}
     >
       <Pressable
-        onPress={() => {
-          ImagePicker.openPicker({
-            cropping: true,
-            cropperStatusBarColor: "#000000",
-            cropperToolbarColor: "#000000",
-            showCropGuidelines: false,
-            cropperTintColor: "red",
-            cropperActiveWidgetColor: "red",
-
-            cropperToolbarWidgetColor: "#FFFFFF",
-            cropperCancelText: "#FFFFFF",
-            cropperChooseColor: "#FFFFFF",
-            compressImageQuality: 0.5,
-          })
-            .then((image) => {
-              handleSetPhotoPost(image?.mime, image?.path, image?.size);
-            })
-            .catch((e) => {});
-        }}
+        onPress={pickImage}
         android_ripple={{ color: rippleColor, foreground: true }}
         style={{
           width: 100,

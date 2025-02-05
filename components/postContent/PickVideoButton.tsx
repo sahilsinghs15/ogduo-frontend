@@ -1,9 +1,12 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Pressable } from "react-native";
 import React from "react";
-import { CameraIcon, VideoIcon } from "../icons";
-import ImagePicker, { launchImageLibrary } from "react-native-image-picker";
+import { VideoIcon } from "../icons";
+import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
-import { Video } from "react-native-compressor";
+import { Video } from 'expo-av';
+import { useDispatch } from "react-redux";
+import { openToast } from "../../redux/slice/toast/toast";
+
 export default function PickVideoButton({
   handleSetPhotoPost,
   setProgress,
@@ -17,6 +20,37 @@ export default function PickVideoButton({
   const backgroundColor = dark ? "white" : "black";
   const backgroundColorView = !dark ? "white" : "black";
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
+  const dispatch = useDispatch();
+
+  const pickVideo = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
+        return;
+      }
+
+      setIsCompressing(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        handleSetPhotoPost(
+          result.assets[0].mimeType || 'video/mp4',
+          result.assets[0].uri,
+          result.assets[0].fileSize || 0
+        );
+      }
+    } catch (error) {
+      dispatch(openToast({ text: "Failed to process video", type: "Failed" }));
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
   return (
     <View
       style={{
@@ -32,53 +66,7 @@ export default function PickVideoButton({
       }}
     >
       <Pressable
-        onPress={() => {
-          setIsCompressing(true);
-          launchImageLibrary({ mediaType: "video" }, async (video) => {
-            setIsCompressing(false);
-            console.log(
-              "🚀 ~ file: PickVideoButton.tsx:37 ~ launchImageLibrary ~ video:",
-              video
-            );
-
-            if (video.assets && video.assets.length > 0) {
-              const result = await Video.compress(
-                video?.assets[0].uri as string,
-                {
-                  progressDivider: 10,
-
-                  downloadProgress: (progress) => {
-                    console.log("Download Progress: ", progress);
-                  },
-                },
-                (progress) => {
-                  console.log("Compression Progress: ", progress);
-                  setProgress(progress);
-                }
-              );
-              console.log(
-                "🚀 ~ file: PickVideoButton.tsx:46 ~ launchImageLibrary ~ result:",
-                result
-              );
-
-              handleSetPhotoPost(
-                video?.assets[0]?.type as string,
-                result as string,
-                video?.assets[0].fileSize as number
-              );
-            }
-          });
-          // ImagePicker.openPicker({
-
-          //   mediaType: "video",
-
-          // })
-          //   .then((video) => {
-
-          //     handleSetPhotoPost(video?.mime, video?.path, video?.size);
-          //   })
-          //   .catch((e) => {});
-        }}
+        onPress={pickVideo}
         android_ripple={{ color: rippleColor, foreground: true }}
         style={{
           width: 100,

@@ -15,11 +15,12 @@ import { HomeNavigationProp } from "../../../types/navigation";
 import { dateAgo } from "../../../util/date";
 import { useAppSelector } from "../../../redux/hooks/hooks";
 import LinkPost from "./components/LinkPost";
-import ViewShot from "react-native-view-shot";
 import { useRef, useState } from "react";
-import Share from "react-native-share";
 import { Button, Menu, Divider, PaperProvider } from "react-native-paper";
 import Animated, { SlideOutRight } from "react-native-reanimated";
+import * as Sharing from 'expo-sharing';
+import * as ImageManipulator from 'expo-image-manipulator';
+
 export default function PostBuilder({
   imageUri,
   name,
@@ -57,22 +58,22 @@ export default function PostBuilder({
   const user = useAppSelector((state) => state?.user?.data);
   const ref = useRef<any>(null);
 
-  const handleShare = () => {
-    console.log("shared");
-    ref?.current?.capture()?.then((uri: string) => {
-      console.log("do something with ", uri);
-      Share.open({ urls: [uri] })
-        .then((res) => {
-          console.log(res);
-        })
-        .catch((err) => {
-          err && console.log(err);
-        });
-    });
+  const handleShare = async () => {
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        ref.current,
+        [],
+        { format: ImageManipulator.SaveFormat.JPEG, compress: 0.9 }
+      );
+      
+      await Sharing.shareAsync(result.uri);
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
   };
 
   return (
-    <ViewShot ref={ref} options={{ fileName: id, format: "jpg", quality: 0.9 }}>
+    <View ref={ref} collapsable={false}>
       <Animated.View
         exiting={SlideOutRight.springify()}
         style={{
@@ -217,6 +218,6 @@ export default function PostBuilder({
           </View>
         </Pressable>
       </Animated.View>
-    </ViewShot>
+    </View>
   );
 }

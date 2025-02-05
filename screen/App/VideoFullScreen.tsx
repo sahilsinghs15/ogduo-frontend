@@ -15,60 +15,45 @@ import { StatusBar } from "expo-status-bar";
 
 import { useAppDispatch } from "../../redux/hooks/hooks";
 import { openToast } from "../../redux/slice/toast/toast";
-import ReactNativeBlobUtil from "react-native-blob-util";
 import uuid from "react-native-uuid";
 import Feather from "@expo/vector-icons/Feather";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+
 export default function VideoFull({ navigation, route }: VideoFullScreen) {
   const dispatch = useAppDispatch();
   console.log("file url", route.params?.videoUri);
   const [progress, setProgress] = useState({ received: 0, total: 1 });
   const [done, setDone] = useState(true);
   console.log((progress?.received / progress.total) * 100);
-  const handleDownload = () => {
-    setDone(false);
-    setProgress({ received: 0, total: 1 });
-    ReactNativeBlobUtil.config({
-      // response data will be saved to this path if it has access right.
-      // path:
-      //   dirs.DocumentDir +
-      //   `${photoUri?.split(".")[photoUri?.split(".")?.length - 2]}${
-      //     photoUri?.split(".")[photoUri?.split(".")?.length - 1]
-      //   }`,
-      fileCache: true,
-    })
-      .fetch("GET", route.params?.videoUri, {
-        //some headers ..
-      })
-      .progress((received, total) => {
-        console.log("progress", received, total);
 
-        setProgress((prev) => {
-          return { ...prev, received: Number(received), total: Number(total) };
-        });
-      })
-      .then(async (res) => {
-        // the path should be dirs.DocumentDir + 'path-to-file.anything'
-        ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
-          {
-            name: uuid.v4(), // name of the file
-            parentFolder: "qui", // subdirectory in the Media Store, e.g. HawkIntech/Files to create a folder HawkIntech with a subfolder Files and save the image within this folder
-            mimeType: `video/${
-              route.params?.videoUri?.split(".")[
-                route.params?.videoUri?.split(".")?.length - 1
-              ]
-            }`,
-          },
-          "Download",
-          res.path()
-        )
-          .then((r) => {
-            setDone(true);
-            dispatch(openToast({ text: "Saved", type: "Info" }));
-          })
-          .catch((e) => {});
-      });
+  const handleDownload = async () => {
+    try {
+      setDone(false);
+      setProgress({ received: 0, total: 1 });
+      
+      const { uri: fileUri } = await FileSystem.downloadAsync(
+        route.params?.videoUri,
+        FileSystem.documentDirectory + `${uuid.v4()}.mp4`,
+        {
+          sessionType: FileSystem.FileSystemSessionType.BACKGROUND,
+          md5: true
+        }
+      );
+
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status === 'granted') {
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        setDone(true);
+        dispatch(openToast({ text: "Saved", type: "Info" }));
+      }
+    } catch (error) {
+      setDone(true);
+      dispatch(openToast({ text: "Download failed", type: "Failed" }));
+    }
   };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (

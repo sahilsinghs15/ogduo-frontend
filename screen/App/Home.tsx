@@ -1,4 +1,4 @@
-import { Text, Pressable } from "react-native";
+import { Text, Pressable, Image, View } from "react-native";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import AnimatedScreen from "../../components/global/AnimatedScreen";
@@ -16,6 +16,9 @@ import HomeFollowed from "./HomeScreens/HomeFollowed";
 import { useGetAllChatsQuery } from "../../redux/api/chat";
 import socket from "../../util/socket";
 import { useNavigationState } from "@react-navigation/native";
+import * as MediaLibrary from 'expo-media-library';
+
+type PhotoAsset = MediaLibrary.Asset;
 
 export default function Home({ navigation }: DrawerHomeProp) {
   const dark = useGetMode();
@@ -24,6 +27,7 @@ export default function Home({ navigation }: DrawerHomeProp) {
   const color = isDark ? "white" : "black";
   const dispatch = useAppDispatch();
   const [isAll, setIsAll] = useState(true);
+  const [photos, setPhotos] = useState<PhotoAsset[]>([]);
 
   // useGetRandomPostsQuery(null);
   // useGetRandomPeopleQuery(null);
@@ -81,6 +85,28 @@ export default function Home({ navigation }: DrawerHomeProp) {
       },
     });
   }, [color, isAll]);
+
+  async function hasPermission() {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    return status === 'granted';
+  }
+
+  useEffect(() => {
+    async function getPhotos() {
+      if (!(await hasPermission())) {
+        return;
+      }
+
+      const { assets } = await MediaLibrary.getAssetsAsync({
+        first: 20,
+        mediaType: MediaLibrary.MediaType.photo,
+        sortBy: [MediaLibrary.SortBy.creationTime],
+      });
+      
+      setPhotos(assets);
+    }
+    getPhotos();
+  }, []);
 
   return (
     <AnimatedScreen>{isAll ? <HomeAll /> : <HomeFollowed />}</AnimatedScreen>

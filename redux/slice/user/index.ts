@@ -2,7 +2,7 @@ import { PayloadAction, createSlice } from "@reduxjs/toolkit";
 import { authApi } from "../../api/auth";
 import { IUSerData } from "../../../types/api";
 import { userApi } from "../../api/user";
-import socket from "../../../util/socket";
+import { disconnectSocket } from '../../../util/socket';
 
 export interface UserState {
   data: IUSerData | null;
@@ -23,7 +23,7 @@ const user = createSlice({
       state.error = null;
       state.loading = false;
       state.token = null;
-      socket.disconnect();
+      disconnectSocket();
     },
     clearUserData: (state) => {
       state.data = null;

@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import React from "react";
 import { AudioIcon, CameraIcon } from "../icons";
-import DocumentPicker from "react-native-document-picker";
+import * as DocumentPicker from 'expo-document-picker';
 import useGetMode from "../../hooks/GetMode";
 export default function PickAudioButton({
   handleSetAudioPost,
@@ -32,18 +32,20 @@ export default function PickAudioButton({
       }}
     >
       <Pressable
-        onPress={() => {
-          DocumentPicker.pick({ type: "audio/mpeg" })
-            .then((e) => {
-
-              handleSetAudioPost(
-                e[0]?.type as string,
-                e[0].uri,
-                e[0]?.size || 0,
-                e[0]?.name || "any.mp3"
-              );
-            })
-            .catch((e) => {});
+        onPress={async () => {
+          const result = await DocumentPicker.getDocumentAsync({
+            type: "audio/*"
+          });
+          
+          if (result.assets && result.assets[0]) {
+            const file = result.assets[0];
+            handleSetAudioPost(
+              file.mimeType || 'audio/mpeg',
+              file.uri,
+              file.size || 0,
+              file.name
+            );
+          }
         }}
         android_ripple={{ color: rippleColor, foreground: true }}
         style={{

@@ -1368,7 +1368,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-blob-util (0.19.11):
+  - -util (0.19.11):
     - React-Core
   - react-native-blur (4.4.1):
     - DoubleConversion

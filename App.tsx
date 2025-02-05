@@ -1,4 +1,4 @@
-const setImmediate = global.setImmediate || ((fn: () => void) => setTimeout(fn, 0));
+const setImmediate = global.setImmediate ?? ((fn: () => void) => setTimeout(fn, 0));
 
 import "react-native-gesture-handler";
 import 'react-native-polyfill-globals/auto';
@@ -31,10 +31,8 @@ import { useAppDispatch, useAppSelector } from "./redux/hooks/hooks";
 import { openToast } from "./redux/slice/toast/toast";
 import CustomToast from "./components/global/Toast";
 import { LoadingModal } from "./components/global/Modal/LoadingOverlay";
-// import Navigation from "./Navigation";
 import SystemNavigationBar from "react-native-system-navigation-bar";
 import Notifications from "./util/notification";
-import DeviceInfo from "react-native-device-info";
 import * as Device from "expo-device";
 import * as NavigationBar from "expo-navigation-bar";
 import * as Sentry from "@sentry/react-native";
@@ -60,11 +58,8 @@ SystemNavigationBar.setNavigationBarContrastEnforced(true);
 export default function App() {
   const dispatch = useAppDispatch();
   const netInfo = useNetInfo();
-  const darkMode = useGetMode();
-  const barColor = darkMode ? "black" : "white";
 
   useEffect(() => {
-    // Notification Listener
     const notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
       console.log("Notification received:", notification.request.content.data);
     });
@@ -73,24 +68,6 @@ export default function App() {
       console.log("Notification response:", response);
     });
 
-    // Device Info and Environment Settings
-    const setNavigationBarColor = async () => {
-      if (Platform.OS !== "ios") {
-        await NavigationBar.setBackgroundColorAsync(barColor);
-      }
-    };
-    setNavigationBarColor();
-
-    // Check High-End Device
-    const isHighEndDevice = () => {
-      const ram = DeviceInfo.getTotalMemorySync();
-      const isHighEnd =
-        (DeviceInfo.getApiLevelSync() >= 33 && ram >= 6_442_450_944) || Platform.OS === "ios";
-      dispatch(setHighEnd({ isHighEnd }));
-    };
-    isHighEndDevice();
-
-    // Handle Connectivity
     if (netInfo.isConnected === false) {
       dispatch(openToast({ text: "No Internet Connection", type: "Failed" }));
     }
@@ -99,15 +76,17 @@ export default function App() {
       notificationSubscription.remove();
       responseSubscription.remove();
     };
-  }, [barColor, netInfo.isConnected]);
+  }, [netInfo.isConnected]);
 
   return (
     <Provider store={store}>
-      <PersistGate persistor={persistor}>
+      <PersistGate loading={null} persistor={persistor}>
         <PaperProvider>
           <CustomToast />
           <LoadingModal />
-          <Navigation />
+          <NavigationContainer>
+            <Navigation />
+          </NavigationContainer>
         </PaperProvider>
       </PersistGate>
     </Provider>
@@ -117,8 +96,10 @@ export default function App() {
 const Navigation = () => {
   const dispatch = useAppDispatch();
   const darkMode = useGetMode();
+  const netInfo = useNetInfo();
   const route = useAppSelector((state) => state?.routes?.route);
   const userAuthenticated = useAppSelector((state) => state?.user?.token);
+  const barColor = darkMode ? "black" : "white";
 
   const [fontsLoaded] = useFonts({
     mulish: require("./assets/fonts/Mulish-Light.ttf"),
@@ -129,6 +110,32 @@ const Navigation = () => {
     jakaraBold: require("./assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
     jakara: require("./assets/fonts/PlusJakartaSans-Medium.ttf"),
   });
+
+  useEffect(() => {
+    const notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
+      console.log("Notification received:", notification.request.content.data);
+    });
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
+      console.log("Notification response:", response);
+    });
+
+    const setNavigationBarColor = async () => {
+      if (Platform.OS !== "ios") {
+        await NavigationBar.setBackgroundColorAsync(barColor);
+      }
+    };
+    setNavigationBarColor();
+
+    if (netInfo.isConnected === false) {
+      dispatch(openToast({ text: "No Internet Connection", type: "Failed" }));
+    }
+
+    return () => {
+      notificationSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, [barColor, netInfo.isConnected]);
 
   if (!fontsLoaded) return null;
 

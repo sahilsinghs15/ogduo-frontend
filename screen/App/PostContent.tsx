@@ -16,10 +16,6 @@ import useGetMode from "../../hooks/GetMode";
 import TextArea from "../../components/postContent/TextArea";
 import { PostContentProp } from "../../types/navigation";
 
-import {
-  CameraRoll,
-  PhotoIdentifier,
-} from "@react-native-camera-roll/camera-roll";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 import PickImageButton from "../../components/postContent/PickImageButton";
@@ -54,12 +50,13 @@ import { Image } from "expo-image";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
 
 import * as Progress from "react-native-progress";
+import * as MediaLibrary from 'expo-media-library';
 
 const width = Dimensions.get("window").width;
 export default function PostContent({ navigation }: PostContentProp) {
   const dark = useGetMode();
   const dispatch = useAppDispatch();
-  const [photos, setPhotos] = useState<PhotoIdentifier[]>([]);
+  const [photos, setPhotos] = useState<MediaLibrary.Asset[]>([]);
   const [postPhoto, setPostPhoto] = useState<{
     mimeType: string;
     uri: string;
@@ -161,21 +158,15 @@ export default function PostContent({ navigation }: PostContentProp) {
 
   useEffect(() => {
     async function getPicture() {
-      if (Platform.OS === "android" && !(await hasAndroidPermission())) {
-        return;
-      }
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') return;
 
-      CameraRoll.getPhotos({
+      const { assets } = await MediaLibrary.getAssetsAsync({
         first: 20,
-
-        assetType: "Photos",
-      })
-        .then((r) => {
-          setPhotos(r.edges);
-        })
-        .catch((err) => {
-          //Error Loading Images
-        });
+        mediaType: MediaLibrary.MediaType.photo,
+        sortBy: [MediaLibrary.SortBy.creationTime]
+      });
+      setPhotos(assets);
     }
     getPicture();
   }, []);
@@ -560,15 +551,15 @@ export default function PostContent({ navigation }: PostContentProp) {
                       style={{ borderRadius: 10 }}
                       onPress={() => {
                         setPostPhoto({
-                          uri: item?.node?.image?.uri,
-                          mimeType: item?.node?.type,
-                          size: item?.node?.image?.fileSize || 0,
+                          uri: item.uri,
+                          mimeType: item.mediaType === 'photo' ? 'image/jpeg' : 'video/mp4',
+                          size: item.duration || 0,
                         });
                       }}
                     >
                       <Image
                         style={{ height: 100, width: 100, borderRadius: 10 }}
-                        source={{ uri: item?.node?.image?.uri }}
+                        source={{ uri: item.uri }}
                       />
                     </Pressable>
                   </View>

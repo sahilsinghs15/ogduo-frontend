@@ -1,10 +1,11 @@
-import { View, Text, Pressable, ToastAndroid } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import React from "react";
 import { CameraIcon } from "../icons";
-import ImagePicker from "react-native-image-crop-picker";
+import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
 import { openToast } from "../../redux/slice/toast/toast";
+
 export default function PickGifButton({
   handleSetPhotoPost,
 }: {
@@ -15,14 +16,48 @@ export default function PickGifButton({
   const backgroundColorView = !dark ? "white" : "black";
   const dispatch = useAppDispatch();
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
+
+  const pickGif = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        
+        // Check if it's a GIF and under 1MB
+        if (asset.fileSize && asset.fileSize > 1200000 || 
+            asset.mimeType !== "image/gif") {
+          dispatch(openToast({ text: "Gif of 1MB only!", type: "Failed" }));
+          return;
+        }
+
+        handleSetPhotoPost(
+          asset.mimeType || 'image/gif',
+          asset.uri,
+          asset.fileSize || 0
+        );
+      }
+    } catch (error) {
+      dispatch(openToast({ text: "Failed to select GIF", type: "Failed" }));
+    }
+  };
+
   return (
     <View
       style={{
         borderColor,
         borderWidth: 1,
-
         borderStyle: "dashed",
-       
         borderRadius: 10,
         overflow: "hidden",
         height: 50,
@@ -31,36 +66,7 @@ export default function PickGifButton({
       }}
     >
       <Pressable
-        onPress={() => {
-          ImagePicker.openPicker({
-            cropping: false,
-            cropperStatusBarColor: "#000000",
-            cropperToolbarColor: "#000000",
-            showCropGuidelines: false,
-            cropperTintColor: "red",
-            mediaType: "photo",
-            cropperActiveWidgetColor: "red",
-            cropperToolbarWidgetColor: "#FFFFFF",
-            cropperCancelText: "#FFFFFF",
-            cropperChooseColor: "#FFFFFF",
-          })
-            .then((image) => {
-              if (image.size > 1200000 || image.mime !== "image/gif") {
-                ToastAndroid.showWithGravityAndOffset(
-                  "Gif of 1MB only!",
-                  ToastAndroid.LONG,
-                  ToastAndroid.TOP,
-                  25,
-                  50
-                );
-
-                return;
-              }
-
-              handleSetPhotoPost(image?.mime, image?.path, image?.size);
-            })
-            .catch((e) => {});
-        }}
+        onPress={pickGif}
         android_ripple={{ color: rippleColor, foreground: true }}
         style={{
           padding: 10,

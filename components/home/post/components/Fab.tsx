@@ -3,7 +3,6 @@ import { View, Pressable } from "react-native";
 import useGetMode from "../../../../hooks/GetMode";
 import { useNavigation } from "@react-navigation/native";
 import { HomeNavigationProp } from "../../../../types/navigation";
-import DeviceInfo from "react-native-device-info";
 import { useAppSelector } from "../../../../redux/hooks/hooks";
 
 export default function Fab({ item }: { item: JSX.Element }) {

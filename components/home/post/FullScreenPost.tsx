@@ -19,11 +19,13 @@ import { dateFormatted } from "../../../util/date";
 import EngagementsText from "./misc/EngagementText";
 import { useAppSelector } from "../../../redux/hooks/hooks";
 import LinkPost from "./components/LinkPost";
-import Share from "react-native-share";
-import ViewShot from "react-native-view-shot";
 import { useRef, useState } from "react";
 import { Image } from "expo-image";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+
 export default function FullScreenPost({
   imageUri,
   name,
@@ -60,192 +62,190 @@ export default function FullScreenPost({
   const [showQ, setShowQ] = useState(false);
   const ref = useRef<any>(null);
 
-  const handleShare = () => {
-    setShowQ(true);
-    ref?.current?.capture()?.then((uri: string) => {
-      Share.open({ urls: [uri] })
-        .then((res) => {
-          console.log(res);
-          setShowQ(false);
-        })
-        .catch((err) => {
-          err && console.log(err);
-        });
-    });
+  const handleShare = async () => {
+    try {
+      setShowQ(true);
+      const result = await ImageManipulator.manipulateAsync(
+        ref.current,
+        [],
+        { format: ImageManipulator.SaveFormat.JPEG, compress: 0.9 }
+      );
+      
+      await Sharing.shareAsync(result.uri);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setShowQ(false);
+    }
   };
   return (
-    <ViewShot
+    <View
       ref={ref}
-      options={{ fileName: `${id}`, format: "jpg", quality: 0.9 }}
+      collapsable={false}
+      style={{
+        backgroundColor,
+        borderBottomWidth: 0.5,
+        borderBottomColor,
+        padding: 10,
+      }}
     >
       <View
         style={{
-          backgroundColor,
-
-          borderBottomWidth: 0.5,
-          borderBottomColor,
-
-          padding: 10,
+          width: "100%",
+          gap: 10,
         }}
       >
-        <View
-          style={{
-            width: "100%",
-            gap: 10,
-          }}
-        >
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <View
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View
+            style={{
+              height: 50,
+              width: 50,
+              justifyContent: "center",
+              alignItems: "center",
+              borderRadius: 9999,
+              overflow: "hidden",
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                userId && userId !== user?.id
+                  ? navigation.navigate("ProfilePeople", {
+                      id: userId,
+                      imageUri,
+                      userTag,
+                      verified,
+                      name,
+                    })
+                  : userId && userId === user?.id
+                  ? navigation.navigate("Profile")
+                  : null;
+              }}
+              android_ripple={{ color: rColor, foreground: true }}
               style={{
                 height: 50,
                 width: 50,
                 justifyContent: "center",
                 alignItems: "center",
-                borderRadius: 9999,
-                overflow: "hidden",
               }}
             >
-              <Pressable
-                onPress={() => {
-                  userId && userId !== user?.id
-                    ? navigation.navigate("ProfilePeople", {
-                        id: userId,
-                        imageUri,
-                        userTag,
-                        verified,
-                        name,
-                      })
-                    : userId && userId === user?.id
-                    ? navigation.navigate("Profile")
-                    : null;
-                }}
-                android_ripple={{ color: rColor, foreground: true }}
-                style={{
-                  height: 50,
-                  width: 50,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                {imageUri ? (
-                  <ProfileImage imageUri={imageUri} />
-                ) : (
-                  <ProfileIcon color={color} size={58} />
-                )}
-              </Pressable>
-            </View>
-            <NameAndTagFullScreen
-              name={name}
-              verified={verified}
-              userTag={userTag}
-            />
-          </View>
-          <View style={{ width: "100%", justifyContent: "flex-start" }}>
-            {postText &&
-              (!link ? (
-                <TextPost
-                  postText={postText}
-                  photoUri={photoUri}
-                  videoUri={videoUri}
-                />
+              {imageUri ? (
+                <ProfileImage imageUri={imageUri} />
               ) : (
-                <LinkPost
-                  id={link.id}
-                  photoUri={[link.imageUri || ""]}
-                  title={link.title}
-                  url={postText}
-                />
-              ))}
-            <View>
-              {photo && (
-                <PhotoPostFullScreen
-                  id={id}
-                  photoUri={photo?.uri}
-                  height={photo?.height}
-                  width={photo?.width}
-                />
+                <ProfileIcon color={color} size={58} />
               )}
-            </View>
-            {videoUri && (
-              <VideoPost
-                thumbNail={thumbNail}
-                videoTitle={videoTitle}
-                imageUri={imageUri}
-                name={name}
-                userTag={userTag}
+            </Pressable>
+          </View>
+          <NameAndTagFullScreen
+            name={name}
+            verified={verified}
+            userTag={userTag}
+          />
+        </View>
+        <View style={{ width: "100%", justifyContent: "flex-start" }}>
+          {postText &&
+            (!link ? (
+              <TextPost
+                postText={postText}
+                photoUri={photoUri}
                 videoUri={videoUri}
-                videoViews={videoViews}
+              />
+            ) : (
+              <LinkPost
+                id={link.id}
+                photoUri={[link.imageUri || ""]}
+                title={link.title}
+                url={postText}
+              />
+            ))}
+          <View>
+            {photo && (
+              <PhotoPostFullScreen
+                id={id}
+                photoUri={photo?.uri}
+                height={photo?.height}
+                width={photo?.width}
               />
             )}
-            {audioUri && <AudioPost uri={audioUri} photoUri={imageUri} idx={0} />}
-            <View
-              style={{ flexDirection: "row", gap: 4, alignItems: "center" }}
-            >
-              <Text
-                style={{
-                  color: "#7a868f",
-                  fontFamily: "mulishMedium",
-                  fontSize: 16,
-                }}
-              >
-                {timeString}
-              </Text>
-              <View
-                style={{
-                  width: 3,
-                  height: 3,
-                  backgroundColor: "#7a868f",
-                  borderRadius: 999,
-                }}
-              />
-              <Text
-                style={{
-                  color: "#7a868f",
-                  fontFamily: "mulishMedium",
-                  fontSize: 14,
-                }}
-              >
-                {dateString}
-              </Text>
-            </View>
-            <View
+          </View>
+          {videoUri && (
+            <VideoPost
+              thumbNail={thumbNail}
+              videoTitle={videoTitle}
+              imageUri={imageUri}
+              name={name}
+              userTag={userTag}
+              videoUri={videoUri}
+              videoViews={videoViews}
+            />
+          )}
+          {audioUri && <AudioPost uri={audioUri} photoUri={imageUri} idx={0} />}
+          <View
+            style={{ flexDirection: "row", gap: 4, alignItems: "center" }}
+          >
+            <Text
               style={{
-                flexDirection: "row",
-                gap: 5,
-                marginVertical: 10,
-                paddingVertical: 10,
-                borderTopColor: "#7a868f",
-                borderTopWidth: 0.3,
-                borderBottomWidth: 0.3,
-                borderBottomColor: "#7a868f",
+                color: "#7a868f",
+                fontFamily: "mulishMedium",
+                fontSize: 16,
               }}
             >
-              <EngagementsText engagementNumber={like} engage="Like" />
-              <EngagementsText
-                engagementNumber={comments || 0}
-                engage="Comment"
-              />
-            </View>
-            <EngagementsFullScreen
-              handleShare={handleShare}
-              title={title}
-              isReposted={isReposted}
-              comments={comments}
-              like={like}
-              isLiked={isLiked}
-              id={id}
+              {timeString}
+            </Text>
+            <View
+              style={{
+                width: 3,
+                height: 3,
+                backgroundColor: "#7a868f",
+                borderRadius: 999,
+              }}
+            />
+            <Text
+              style={{
+                color: "#7a868f",
+                fontFamily: "mulishMedium",
+                fontSize: 14,
+              }}
+            >
+              {dateString}
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 5,
+              marginVertical: 10,
+              paddingVertical: 10,
+              borderTopColor: "#7a868f",
+              borderTopWidth: 0.3,
+              borderBottomWidth: 0.3,
+              borderBottomColor: "#7a868f",
+            }}
+          >
+            <EngagementsText engagementNumber={like} engage="Like" />
+            <EngagementsText
+              engagementNumber={comments || 0}
+              engage="Comment"
             />
           </View>
+          <EngagementsFullScreen
+            handleShare={handleShare}
+            title={title}
+            isReposted={isReposted}
+            comments={comments}
+            like={like}
+            isLiked={isLiked}
+            id={id}
+          />
         </View>
-        {!showQ && (
-          <Animated.View
-            style={{ position: "absolute", right: 10, top: 10 }}
-            exiting={FadeOut.springify()}
-          >
-            <Text style={{ fontFamily: "uberBold", color }}>Qui</Text>
-          </Animated.View>
-        )}
       </View>
-    </ViewShot>
+      {!showQ && (
+        <Animated.View
+          style={{ position: "absolute", right: 10, top: 10 }}
+          exiting={FadeOut.springify()}
+        >
+          <Text style={{ fontFamily: "uberBold", color }}>Qui</Text>
+        </Animated.View>
+      )}
+    </View>
   );
 }
