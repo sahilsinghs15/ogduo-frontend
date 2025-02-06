@@ -31,32 +31,31 @@ import online from "./slice/chat/online";
 import currentPage from "./slice/currentPage";
 import audio from "./slice/post/audio";
 
+// Define a base state type
+type RootStateType = {
+  routes: Route;
+  prefs: Prefs;
+  bottomSheet: BottomSheet;
+  post: postState;
+  toast: ToastState;
+  loadingModal: LoadingModal;
+  searchPost: typeof searchPost;
+  followers: FollowerState;
+  chatlist: ChatList;
+  online: typeof online;
+  audio: typeof audio;
+  [chatApi.reducerPath]: typeof chatApi.reducer;
+  [authApi.reducerPath]: typeof authApi.reducer;
+  [userApi.reducerPath]: typeof userApi.reducer;
+  [servicesApi.reducerPath]: typeof servicesApi.reducer;
+  user: UserState;
+  searchPeople: typeof searchPeople;
+  followedPost: typeof followedPost;
+  currentPage: typeof currentPage;
+};
+
 // Persist Config for Redux Persist
-const persistConfig: PersistConfig<
-  Partial<{
-    routes: Route;
-    prefs: Prefs;
-    bottomSheet: BottomSheet;
-    post: postState;
-    searchPost: postState;
-    toast: ToastState;
-    user: UserState;
-    online: { ids: Array<string> };
-    followers: FollowerState;
-    searchPeople: personState;
-    loadingModal: LoadingModal;
-    followedPost: postState;
-    audio: any;
-    chatlist: ChatList;
-    currentPage: {
-      page: string | null;
-    };
-    [chatApi.reducerPath]: any;
-    [authApi.reducerPath]: any;
-    [userApi.reducerPath]: any;
-    [servicesApi.reducerPath]: any;
-  }>
-> = {
+const persistConfig: PersistConfig<RootStateType> = {
   key: "root",
   storage: reduxStorage,
   whitelist: ["routes", "prefs", "user"],
@@ -66,6 +65,7 @@ const persistConfig: PersistConfig<
     userApi.reducerPath,
     servicesApi.reducerPath,
   ],
+  timeout: 2000 // Increase timeout for hydration
 };
 
 // Combine Reducers

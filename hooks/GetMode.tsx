@@ -5,9 +5,10 @@ import { useAppSelector } from "../redux/hooks/hooks";
 export default function useGetMode() {
   const scheme = useColorScheme();
   const [dark, setDark] = useState(false);
-  const { mode  } = useAppSelector((state) => state.prefs) as any;
+  const { mode = 'system' } = useAppSelector((state) => state.prefs) ?? {};
 
   useEffect(() => {
+    console.log("Mode changed:", mode, "Scheme:", scheme);
     if (mode === "system") {
       setDark(scheme === "dark");
     } else {

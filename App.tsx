@@ -31,13 +31,11 @@ import { useAppDispatch, useAppSelector } from "./redux/hooks/hooks";
 import { openToast } from "./redux/slice/toast/toast";
 import CustomToast from "./components/global/Toast";
 import { LoadingModal } from "./components/global/Modal/LoadingOverlay";
-import SystemNavigationBar from "react-native-system-navigation-bar";
 import Notifications from "./util/notification";
 import * as Device from "expo-device";
 import * as NavigationBar from "expo-navigation-bar";
 import * as Sentry from "@sentry/react-native";
 import useGetMode from "./hooks/GetMode";
-import { setHighEnd } from "./redux/slice/prefs";
 import OnboardNavigation from "./routes/OnBoard";
 import Main from "./routes/Main";
 import Auth from "./routes/Auth";
@@ -52,10 +50,25 @@ Sentry.init({
 const persistor = persistStore(store);
 SplashScreen.preventAutoHideAsync();
 
-SystemNavigationBar.setNavigationColor("transparent");
-SystemNavigationBar.setNavigationBarContrastEnforced(true);
-
 export default function App() {
+  console.log("App component mounting...");
+  return (
+    <Provider store={store}>
+      <PersistGate 
+        loading={<View style={{flex:1, backgroundColor: 'black'}} />} 
+        persistor={persistor}
+        onBeforeLift={() => {
+          console.log("PersistGate before lift...");
+        }}
+      >
+        <AppContent />
+      </PersistGate>
+    </Provider>
+  );
+}
+
+function AppContent() {
+  console.log("AppContent mounting...");
   const dispatch = useAppDispatch();
   const netInfo = useNetInfo();
 
@@ -79,27 +92,29 @@ export default function App() {
   }, [netInfo.isConnected]);
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <PaperProvider>
-          <CustomToast />
-          <LoadingModal />
-          <NavigationContainer>
-            <Navigation />
-          </NavigationContainer>
-        </PaperProvider>
-      </PersistGate>
-    </Provider>
+    <PaperProvider>
+      <CustomToast />
+      <LoadingModal />
+      <NavigationContainer
+        onStateChange={() => {
+          console.log("Navigation state changed");
+        }}
+      >
+        <Navigation />
+      </NavigationContainer>
+    </PaperProvider>
   );
 }
 
 const Navigation = () => {
+  const [isReady, setIsReady] = useState(false);
   const dispatch = useAppDispatch();
   const darkMode = useGetMode();
   const netInfo = useNetInfo();
   const route = useAppSelector((state) => state?.routes?.route);
   const userAuthenticated = useAppSelector((state) => state?.user?.token);
   const barColor = darkMode ? "black" : "white";
+  const [navBarReady, setNavBarReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     mulish: require("./assets/fonts/Mulish-Light.ttf"),
@@ -112,32 +127,39 @@ const Navigation = () => {
   });
 
   useEffect(() => {
-    const notificationSubscription = Notifications.addNotificationReceivedListener((notification: any) => {
-      console.log("Notification received:", notification.request.content.data);
-    });
+    if (fontsLoaded) {
+      setIsReady(true);
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response: any) => {
-      console.log("Notification response:", response);
-    });
+  useEffect(() => {
+    let mounted = true;
 
-    const setNavigationBarColor = async () => {
-      if (Platform.OS !== "ios") {
-        await NavigationBar.setBackgroundColorAsync(barColor);
+    const setupNavBar = async () => {
+      try {
+        if (Platform.OS === 'android' && mounted) {
+          await NavigationBar.setBackgroundColorAsync(barColor);
+          await NavigationBar.setButtonStyleAsync(darkMode ? 'light' : 'dark');
+          setNavBarReady(true);
+        }
+      } catch (error) {
+        console.log("Navigation bar setup error:", error);
       }
     };
-    setNavigationBarColor();
 
-    if (netInfo.isConnected === false) {
-      dispatch(openToast({ text: "No Internet Connection", type: "Failed" }));
-    }
+    setTimeout(setupNavBar, 500);
 
     return () => {
-      notificationSubscription.remove();
-      responseSubscription.remove();
+      mounted = false;
     };
-  }, [barColor, netInfo.isConnected]);
+  }, [barColor, darkMode]);
 
-  if (!fontsLoaded) return null;
+  if (!isReady || !fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: 'black' }} />
+    );
+  }
 
   if (route === "onBoard") return <OnboardNavigation />;
   if (userAuthenticated) return <Main />;
