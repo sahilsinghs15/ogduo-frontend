@@ -24,13 +24,17 @@ export const authApi = createApi({
       }
     >({
       query: (payload) => ({
-        url: "/login",
+        url: "http://192.168.0.104:80/api/auth/login",
         method: "POST",
         body: payload,
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
       }),
+
+      transformErrorResponse: (response: { status: number, data: any }) => {
+        return response.data?.message || 'An error occurred';
+      },
     }),
     register: builder.mutation<
       loginResult,
@@ -41,15 +45,25 @@ export const authApi = createApi({
         name: string;
       }
     >({
-      query: (payload) => ({
-        url: "/signup",
-        method: "POST",
-        body: payload,
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      }),
-     
+      query: (payload) => {
+        console.log('Making register request with:', payload);
+        return {
+          url: "http://192.168.0.104:80/api/auth/signup",
+          method: "POST",
+          body: payload,
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        };
+      },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          console.log('Register success:', data);
+        } catch (error) {
+          console.log('Register query error:', error);
+        }
+      },
     }),
   }),
 });

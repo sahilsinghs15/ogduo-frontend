@@ -43,7 +43,7 @@ export default function Register({ navigation }: RegisterScreen) {
   const buttonColor = !isDark ? "white" : "black";
   const borderColor = isDark ? "white" : "black";
   const dispatch = useAppDispatch();
-  const [registerUser, regResponse] = useRegisterMutation();
+  const [register, { isLoading }] = useRegisterMutation();
 
   const {
     control,
@@ -82,21 +82,35 @@ export default function Register({ navigation }: RegisterScreen) {
   const shakeName = useCallback(() => {
     vibrateAnimation(animName);
   }, []);
-  const onSubmit = (data: {
+  const onSubmit = async (data: {
     userName: string;
     password: string;
     email: string;
     name: string;
   }) => {
-    registerUser(data)
-      .unwrap()
-      .then((e:any) => {
-        dispatch(openToast({ type: "Success", text: "Successfully Created" }));
-        navigation.replace("Login");
-      })
-      .catch((e:any) => {
-        dispatch(openToast({ type: "Failed", text: e?.data.message }));
-      });
+    try {
+      console.log('Register attempt with data:', data);
+      const result = await register({
+        userName: data.userName.trim(),
+        password: data.password,
+        email: data.email.trim(),
+        name: data.name.trim()
+      }).unwrap();
+      
+      console.log('Register response:', result);
+      dispatch(openToast({ text: "Registration successful", type: "Success" }));
+      navigation.replace("Login");
+    } catch (error: any) {
+      console.log('Register error:', error);
+      const errorMessage = error?.data?.message 
+        || error?.message 
+        || "Registration failed";
+      
+      dispatch(openToast({ 
+        text: errorMessage, 
+        type: "Failed" 
+      }));
+    }
   };
   useEffect(() => {
     if (errors.userName) {
@@ -427,9 +441,10 @@ export default function Register({ navigation }: RegisterScreen) {
               }}
             >
               <Button
-                loading={regResponse.isLoading}
+                loading={isLoading}
                 onPress={() => {
                   Keyboard.dismiss();
+                  console.log('Form errors:', errors);
                   handleSubmit(onSubmit)();
                 }}
               >

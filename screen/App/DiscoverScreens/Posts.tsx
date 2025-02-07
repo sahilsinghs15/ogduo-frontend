@@ -22,13 +22,46 @@ import PostsContainer from "../../../components/discover/PostsContainer";
 import { useLazySearchPostsQuery } from "../../../redux/api/services";
 import { useAppSelector } from "../../../redux/hooks/hooks";
 
+interface Post {
+  id: string;
+  createdAt: string;
+  _count: {
+    comments: number;
+    like: number;
+  };
+  repostUser: Array<{ id: string }>;
+  like: Array<{ userId: string }>;
+  link: {
+    id: string;
+    imageHeight?: number;
+    imageUri?: string;
+    imageWidth?: number;
+    title: string;
+  } | null;
+  videoThumbnail?: string;
+  user?: {
+    imageUri?: string;
+    name: string;
+    userName: string;
+    verified: boolean;
+  };
+  audioUri?: string;
+  photoUri?: string;
+  videoTitle?: string;
+  videoUri?: string;
+  postText: string;
+  videoViews?: string;
+}
+
 export default function Posts() {
-  const posts = useAppSelector((state) => state?.searchPost);
-  const authId = useAppSelector((state) => state?.user?.data?.id);
-  const [showLoading, setShowLoading] = useState((posts?.data?.length ?? 0) > 8);
+  // Fix the selector to properly access the data
+  const posts = useAppSelector((state: any) => state.searchPost);
+  const authId = useAppSelector((state: any) => state.user?.data?.id);
+  const [showLoading, setShowLoading] = useState((posts?.length ?? 0) > 8);
   const dark = useGetMode();
   const color = dark ? "white" : "black";
   const acolor = !dark ? "white" : "black";
+
   const handleStopLoading = () => {
     setShowLoading(false);
   };
@@ -38,37 +71,29 @@ export default function Posts() {
     runOnJS(handleStopLoading)();
   }
 
-  const opacity = useSharedValue(0);
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(opacity.value, [0, 1], [1, 0]),
-    };
-  });
-
   useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
-    return () => {
-      cancelAnimation(opacity);
-    };
-  }, []);
+    if (posts?.length <= 8) {
+      setShowLoading(false);
+    }
+  }, [posts]);
 
   return (
     <View style={{ flex: 1 }}>
       <Animated.View
         entering={FadeInLeft.withCallback(callback)
           .springify()
-          .delay((posts?.data?.length ?? 0) > 8 ? 400 : 0)}
+          .delay((posts?.length ?? 0) > 8 ? 400 : 0)}
         style={{ flex: 1 }}
       >
         {posts?.loading && (
-          <Animated.View style={[{ gap: 5, padding: 10 }, animatedStyle]}>
+          <Animated.View style={{ gap: 5, padding: 10 }}>
             {[0, 1, 2].map((idx) => (
               <PostSearchSkeleton key={idx} />
             ))}
           </Animated.View>
         )}
         <FlashList
-          data={posts?.data}
+          data={posts}
           showsVerticalScrollIndicator={false}
           estimatedItemSize={100}
           contentContainerStyle={{
@@ -76,34 +101,25 @@ export default function Posts() {
             paddingBottom: 100,
             paddingHorizontal: 10,
           }}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: Post }) => (
             <PostsContainer
-              id={item.id}
-              date={item.createdAt}
-              comments={item._count.comments}
-              isReposted={item?.repostUser?.find(
+              {...item}
+              isReposted={!!item?.repostUser?.find(
                 (repostUser) => repostUser?.id === authId
-              )
-                ? true
-                : false}
-              link={item.link}
-              like={item._count.like}
-              thumbNail={item.videoThumbnail}
-              isLiked={item?.like?.find((like) => like?.userId === authId)
-                ? true
-                : false}
-              imageUri={item.user?.imageUri}
-              name={item.user?.name}
-              userTag={item.user?.userName}
-              verified={item.user?.verified}
-              audioUri={item.audioUri || undefined}
-              photoUri={item.photoUri}
-              videoTitle={item.videoTitle || undefined}
-              videoUri={item.videoUri || undefined}
-              postText={item.postText}
-              videoViews={item.videoViews?.toString()} idx={0}            />
+              )}
+              isLiked={!!item?.like?.find((like) => like?.userId === authId)}
+              idx={0}
+              imageUri={item.user?.imageUri ?? ""}
+              name={item.user?.name ?? ""}
+              date={new Date(item.createdAt)}
+              userTag={item.user?.userName ?? ""}
+              verified={item.user?.verified ?? false}
+              thumbNail={item.videoThumbnail ?? ""}
+              photoUri={item.photoUri ? [item.photoUri] : []}
+              like={item.like.length}
+            />
           )}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item: Post) => item.id.toString()}
         />
       </Animated.View>
       {showLoading && (

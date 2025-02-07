@@ -40,7 +40,7 @@ const width = Dimensions.get("window").width;
 export default function Login({ navigation }: LoginScreen) {
   const dark = useGetMode();
   const isDark = dark;
-  const [login, loginResponse] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
   const color = isDark ? "white" : "black";
   const buttonColor = !isDark ? "white" : "black";
   const dispatch = useAppDispatch();
@@ -69,27 +69,16 @@ export default function Login({ navigation }: LoginScreen) {
     vibrateAnimation(animPass);
   }, []);
 
-  const onSubmit = (data: { userName: string; password: string }) => {
-    // userApi.util.resetApiState();
-    // servicesApi.util.resetApiState();
-    login({ userName: data.userName.trim(), password: data.password })
-      .unwrap()
-      .then((e:any) => {
-        Vibration.vibrate(5);
-
-        dispatch(openToast({ text: "Successful Login", type: "Success" }));
-      })
-      .catch((e:any) => {
-        console.log(e);
-        Vibration.vibrate(5);
-        if (e?.data?.msg) {
-          console.log("🚀 ~ file: Login.tsx:84 ~ onSubmit ~ e:", e.status);
-          dispatch(openToast({ text: `${e?.data?.msg}`, type: "Failed" }));
-        } else {
-          console.log("🚀 ~ file: Login.tsx:84 ~ onSubmit ~ e:", e.data);
-          dispatch(openToast({ text: e?.data, type: "Failed" }));
-        }
-      });
+  const onSubmit = async (data: { userName: string; password: string }) => {
+    try {
+      const result = await login({ userName: data.userName.trim(), password: data.password }).unwrap();
+      dispatch(openToast({ text: "Successful Login", type: "Success" }));
+    } catch (error: any) {
+      dispatch(openToast({ 
+        text: error.data?.message || 'Login failed', 
+        type: 'Failed' 
+      }));
+    }
   };
   useEffect(() => {
     if (errors.userName) {
@@ -266,7 +255,7 @@ export default function Login({ navigation }: LoginScreen) {
             }}
           >
             <Button
-              loading={loginResponse.isLoading}
+              loading={isLoading}
               onPress={() => {
                 Keyboard.dismiss();
                 handleSubmit(onSubmit)();

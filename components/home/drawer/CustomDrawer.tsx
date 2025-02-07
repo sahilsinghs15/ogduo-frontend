@@ -28,10 +28,10 @@ import socket from "../../../util/socket";
 import { clearAllChatData } from "../../../redux/slice/chat/chatlist";
 import { useLazyLogoutQuery } from "../../../redux/api/user";
 import { Switch } from "react-native-paper";
-import { setHighEnd } from "../../../redux/slice/prefs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomSheetModal } from "@gorhom/bottom-sheet";
 import * as WebBrowser from 'expo-web-browser';
+import { setHighEnd } from "../../../redux/slice/prefs/index";
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps
 ) {

@@ -39,6 +39,8 @@ import useGetMode from "./hooks/GetMode";
 import OnboardNavigation from "./routes/OnBoard";
 import Main from "./routes/Main";
 import Auth from "./routes/Auth";
+import { useTokenValidQuery } from "./redux/api/user";
+import { signOut } from "./redux/slice/user";
 
 enableFreeze(true);
 
@@ -91,6 +93,39 @@ function AppContent() {
     };
   }, [netInfo.isConnected]);
 
+  // Add global error handler
+  useEffect(() => {
+    const handleError = (error: any) => {
+      console.log('Global error:', error);
+      dispatch(openToast({ 
+        text: 'An error occurred', 
+        type: 'Failed' 
+      }));
+    };
+
+    // Set up error handler
+    const errorHandler = (error: ErrorEvent) => {
+      handleError(error.error);
+    };
+
+    // Set up promise rejection handler
+    const rejectionHandler = (event: PromiseRejectionEvent) => {
+      handleError(new Error(event.reason));
+    };
+
+    if (global.addEventListener) {
+      global.addEventListener('error', errorHandler);
+      global.addEventListener('unhandledrejection', rejectionHandler);
+    }
+
+    return () => {
+      if (global.removeEventListener) {
+        global.removeEventListener('error', errorHandler);
+        global.removeEventListener('unhandledrejection', rejectionHandler);
+      }
+    };
+  }, [dispatch]);
+
   return (
     <PaperProvider>
       <CustomToast />
@@ -125,6 +160,19 @@ const Navigation = () => {
     jakaraBold: require("./assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
     jakara: require("./assets/fonts/PlusJakartaSans-Medium.ttf"),
   });
+
+  const { data: tokenValid, error: tokenError } = useTokenValidQuery(null, {
+    pollingInterval: 300000,
+    skip: !userAuthenticated
+  });
+
+  useEffect(() => {
+    console.log('Token validation:', { tokenValid, tokenError, userAuthenticated });
+    if (tokenError || (tokenValid && !tokenValid.valid)) {
+      console.log('Token invalid, logging out');
+      dispatch(signOut());
+    }
+  }, [tokenError, tokenValid, userAuthenticated]);
 
   useEffect(() => {
     if (fontsLoaded) {

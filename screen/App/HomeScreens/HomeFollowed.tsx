@@ -56,7 +56,7 @@ export default function HomeFollowed() {
 
   const dark = useGetMode();
   const dispatch = useAppDispatch();
-  const posts = useAppSelector((state) => state.followedPost);
+  const posts = useAppSelector((state) => state.followedPost) as any;
   const isDark = dark;
   const color = isDark ? "white" : "black";
   const backgroundColor = !isDark ? "white" : "black";

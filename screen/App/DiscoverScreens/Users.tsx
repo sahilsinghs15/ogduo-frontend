@@ -25,7 +25,7 @@ import { useAppSelector } from "../../../redux/hooks/hooks";
 import { Image } from "expo-image";
 
 export default function Users() {
-  const people = useAppSelector((state) => state.searchPeople);
+  const people = useAppSelector((state) => state.searchPeople) as any;
   const opacity = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => {
     return {

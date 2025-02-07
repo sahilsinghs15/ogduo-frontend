@@ -10,19 +10,27 @@ export interface UserState {
   token: string | null;
   loading: boolean;
 }
-const user = createSlice({
+
+const initialState: UserState = {
+  data: null,
+  error: null,
+  loading: false,
+  token: null,
+};
+
+export const userSlice = createSlice({
   name: "user",
-  initialState: {
-    data: null,
-    error: null,
-    loading: false,
-    token: null,
-  } as UserState,
+  initialState,
   reducers: {
     signOut: (state) => {
+      console.log('Signing out...');
+      state.data = null;
       state.error = null;
       state.loading = false;
       state.token = null;
+      // Clear any cached API data
+      userApi.util.resetApiState();
+      authApi.util.resetApiState();
       disconnectSocket();
     },
     clearUserData: (state) => {
@@ -57,9 +65,9 @@ const user = createSlice({
       authApi.endpoints.login.matchFulfilled,
       (state, { payload }) => {
         state.data = payload.data;
+        state.token = payload.token;
         state.error = null;
         state.loading = false;
-        state.token = payload.token;
       }
     );
     builder.addMatcher(authApi.endpoints.login.matchPending, (state) => {
@@ -77,9 +85,18 @@ const user = createSlice({
         state.token = null;
       }
     );
+    builder.addMatcher(
+      userApi.endpoints.tokenValid.matchRejected,
+      (state) => {
+        state.data = null;
+        state.token = null;
+        state.error = null;
+        state.loading = false;
+      }
+    );
   },
 });
 
-export default user.reducer;
+export default userSlice.reducer;
 
-export const { signOut, clearUserData } = user.actions;
+export const { signOut, clearUserData } = userSlice.actions;

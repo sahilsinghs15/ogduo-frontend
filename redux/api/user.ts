@@ -19,12 +19,11 @@ interface loginResult {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/user`,
+    baseUrl: process.env.EXPO_PUBLIC_API_URL,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState)?.user?.token;
-      // If we have a token, set it in the header
+      const token = (getState() as RootState).user.token;
       if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
+        headers.set('authorization', `Bearer ${token}`);
       }
       return headers;
     },
@@ -32,36 +31,41 @@ export const userApi = createApi({
   tagTypes: ["user", "guest"],
   endpoints: (builder) => ({
     getUser: builder.query<{ data: IUSerData }, null>({
-      query: () => "/get-user",
+      query: () => "/api/user/get-user",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     logout: builder.query<{ msg: string }, null>({
-      query: () => "/logout",
+      query: () => "/api/user/logout",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     getGuest: builder.query<{ data: IGuestData }, { id: string }>({
-      query: ({ id }) => `/get-guest?id=${id}`,
+      query: ({ id }) => `/api/user/get-guest?id=${id}`,
       providesTags: ["guest"],
       keepUnusedDataFor: 10,
     }),
     getNotifications: builder.query<{ notifications: Notifications[] }, null>({
-      query: () => `/get-notifications`,
+      query: () => `/api/user/get-notifications`,
       keepUnusedDataFor: 10,
     }),
     getFollowDetails: builder.query<
       { following: string; followers: string },
       null
     >({
-      query: () => "/get-follows",
+      query: () => "/api/user/get-follows",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
-    tokenValid: builder.query<{ msg: boolean }, null>({
-      query: () => "/token-valid",
-      providesTags: ["user"],
-      extraOptions: { maxRetries: 0 },
+    tokenValid: builder.query<{ valid: boolean }, null>({
+      query: () => ({
+        url: '/api/auth/validate',
+        method: 'GET',
+      }),
+      transformErrorResponse: (response) => {
+        console.log('Token validation error:', response);
+        return response;
+      }
     }),
     uploadProfilePicture: builder.mutation<
       { photo: string },
@@ -77,7 +81,7 @@ export const userApi = createApi({
 
         formData.append("photo", blob);
         return {
-          url: "/update-photo",
+          url: "/api/user/update-photo",
           method: "POST",
           body: formData,
           headers: {
@@ -90,7 +94,7 @@ export const userApi = createApi({
     updateNotificationId: builder.mutation<any, { notificationId: string }>({
       query: (payload) => {
         return {
-          url: "/update-notification-id",
+          url: "/api/user/update-notification-id",
           method: "PUT",
           body: { notificationId: payload.notificationId },
           headers: {
@@ -103,14 +107,14 @@ export const userApi = createApi({
       FollowingData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/get-following?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `/api/user/get-following?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     getFollowersList: builder.query<
       FollowData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/get-followers?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `/api/user/get-followers?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     updateData: builder.mutation<
@@ -124,7 +128,7 @@ export const userApi = createApi({
     >({
       query: ({ userName, password, newPassword, name }) => {
         return {
-          url: "/update-data",
+          url: "/api/user/update-data",
           method: "PUT",
           body: { userName, password, newPassword, name },
           headers: {
@@ -145,7 +149,7 @@ export const userApi = createApi({
     >({
       query: ({ password }) => {
         return {
-          url: "/delete-account",
+          url: "/api/user/delete-account",
           method: "DELETE",
           body: { password },
           headers: {

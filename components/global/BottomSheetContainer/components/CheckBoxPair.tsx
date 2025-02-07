@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { useAppDispatch } from "../../../../redux/hooks/hooks";
-import { setMode } from "../../../../redux/slice/prefs";
+import { setMode } from "../../../../redux/slice/prefs/index";
 import useGetMode from "../../../../hooks/GetMode";
 
 

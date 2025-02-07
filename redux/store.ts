@@ -1,10 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { combineReducers } from "redux";
 import routes, { Route } from "./slice/routes";
-import prefs, { Prefs } from "./slice/prefs";
+import prefs, { Prefs } from "./slice/prefs/index";
 import bottomSheet, { BottomSheet } from "./slice/bottomSheet";
 import reduxStorage from "./storage";
-import post, { postState } from "./slice/post";
+import post, { postState } from "./slice/post/index";
 import searchPost from "./slice/post/search";
 import toast, { ToastState } from "./slice/toast/toast";
 import { authApi } from "./api/auth";
@@ -42,7 +42,7 @@ type RootStateType = {
   searchPost: typeof searchPost;
   followers: FollowerState;
   chatlist: ChatList;
-  online: typeof online;
+  online: any;
   audio: typeof audio;
   [chatApi.reducerPath]: typeof chatApi.reducer;
   [authApi.reducerPath]: typeof authApi.reducer;

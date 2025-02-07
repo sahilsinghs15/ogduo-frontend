@@ -55,7 +55,7 @@ export default function ChatScreen({ navigation, route }: ChatScreenProp) {
   const [userChats, setChats] = useState<IChatList | undefined>(undefined);
   const onlineIds = useAppSelector((state) => state?.online?.ids);
   const isOnline = onlineIds?.some(
-    (ids) => ids === (route.params.receiverId || userChats?.users[0].id)
+    (ids : any) => ids === (route.params.receiverId || userChats?.users[0].id)
   );
 
   const dark = useGetMode();
