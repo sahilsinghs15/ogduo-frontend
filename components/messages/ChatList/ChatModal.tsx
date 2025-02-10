@@ -1,7 +1,6 @@
 import { BlurView } from "expo-blur";
-import React, { useState } from "react";
+import React from "react";
 import {
-  Alert,
   Modal,
   StyleSheet,
   Text,
@@ -10,12 +9,10 @@ import {
   Dimensions,
   useWindowDimensions,
 } from "react-native";
-import { ActivityIndicator, Portal } from "react-native-paper";
 import useGetMode from "../../../hooks/GetMode";
-
-import ChatBuilderText from "../../chat/ChatBuilderText";
-import Animated, { FadeInRight, FadeOutRight } from "react-native-reanimated";
+import Animated, { FadeInRight } from "react-native-reanimated";
 import ModalChatText from "../../chat/ModalChatText";
+
 import { useAppDispatch, useAppSelector } from "../../../redux/hooks/hooks";
 import { deleteMessage } from "../../../redux/slice/chat/chatlist";
 import useSocket from "../../../hooks/Socket";
