@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
 import { openToast } from "../../redux/slice/toast/toast";
+import { useMediaPermissions } from '../../hooks/useMediaPermissions';
 
 export default function PickGifButton({
   handleSetPhotoPost,
@@ -16,14 +17,12 @@ export default function PickGifButton({
   const backgroundColorView = !dark ? "white" : "black";
   const dispatch = useAppDispatch();
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
+  const { requestMediaPermissions } = useMediaPermissions();
 
   const pickGif = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
-        return;
-      }
+      const hasPermission = await requestMediaPermissions();
+      if (!hasPermission) return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -34,7 +33,6 @@ export default function PickGifButton({
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         
-        // Check if it's a GIF and under 1MB
         if (asset.fileSize && asset.fileSize > 1200000 || 
             asset.mimeType !== "image/gif") {
           dispatch(openToast({ text: "Gif of 1MB only!", type: "Failed" }));

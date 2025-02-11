@@ -1,8 +1,9 @@
-import { PayloadAction, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authApi } from "../../api/auth";
 import { IUSerData } from "../../../types/api";
 import { userApi } from "../../api/user";
 import { disconnectSocket } from '../../../util/socket';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserState {
   data: IUSerData | null;
@@ -28,10 +29,9 @@ export const userSlice = createSlice({
       state.error = null;
       state.loading = false;
       state.token = null;
-      // Clear any cached API data
+      // Clear API cache
       userApi.util.resetApiState();
       authApi.util.resetApiState();
-      disconnectSocket();
     },
     clearUserData: (state) => {
       state.data = null;
@@ -87,11 +87,13 @@ export const userSlice = createSlice({
     );
     builder.addMatcher(
       userApi.endpoints.tokenValid.matchRejected,
-      (state) => {
-        state.data = null;
-        state.token = null;
-        state.error = null;
-        state.loading = false;
+      (state, action) => {
+        console.log('Token validation rejected:', action);
+        // Only invalidate token on auth errors
+        if (action.error.status === 401 || action.error.status === 403) {
+          state.token = null;
+        }
+        // Ignore other types of errors
       }
     );
   },
@@ -100,3 +102,13 @@ export const userSlice = createSlice({
 export default userSlice.reducer;
 
 export const { signOut, clearUserData } = userSlice.actions;
+
+export const signOutAsync = createAsyncThunk('user/signOut', async (_, { dispatch }) => {
+  try {
+    await AsyncStorage.clear();
+    return true;
+  } catch (error) {
+    console.error('Error during sign out:', error);
+    return false;
+  }
+});

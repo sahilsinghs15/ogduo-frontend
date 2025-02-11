@@ -74,6 +74,7 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
 });
 
 export default function Main() {
+  const dispatch = useAppDispatch();
   const [updateNotificationId] = useUpdateNotificationIdMutation();
   const chatList = useAppSelector((state) => state?.chatlist?.data) as { id: string }[];
   const id = useAppSelector((state) => state.user?.data?.id);
@@ -82,7 +83,6 @@ export default function Main() {
   const tint = isDark ? "dark" : "light";
   const backgroundColor = isDark ? "black" : "white";
   const color = !isDark ? "black" : "white";
-  const dispatch = useAppDispatch();
   const socket = useSocket();
   const borderColor = isDark ? "#FFFFFF7D" : "#4545452D";
   const [getAllChats] = useLazyGetAllChatsQuery();
@@ -94,70 +94,54 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    console.log(process.env.EXPO_PUBLIC_PROJECT_ID);
-    async function registerForPushNotificationsAsync() {
-      try {
-        let token;
+    let isMounted = true;
 
-        const { status: existingStatus } =
-          await Notifications.getPermissionsAsync();
+    const registerForPushNotifications = async () => {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
-        if (existingStatus !== "granted") {
+        
+        if (existingStatus !== 'granted') {
           const { status } = await Notifications.requestPermissionsAsync();
           finalStatus = status;
         }
-        if (finalStatus !== "granted") {
-          dispatch(
-            openToast({
-              text: "Notifications are disabled",
-              type: "Failed",
-            })
-          );
-        }
-        token = await Notifications.getExpoPushTokenAsync({
-          projectId: process.env.EXPO_PUBLIC_PROJECT_ID as string,
-        });
-        console.log(token);
-
-        if (Platform.OS === "android") {
-          Notifications.setNotificationChannelAsync("default", {
-            name: "default",
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: "#8FFF1FC0",
-          });
-          Notifications.setNotificationCategoryAsync("message", [
-            {
-              identifier: "message",
-              buttonTitle: "Reply",
-              textInput: {
-                submitButtonTitle: "reply",
-                placeholder: "Enter Reply",
-              },
-            },
-          ]);
+        
+        if (finalStatus !== 'granted') {
+          console.log('Push notifications permission not granted');
+          return;
         }
 
-        return token;
-      } catch (e) {}
-    }
+        const token = await Notifications.getExpoPushTokenAsync({
+          projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+        }).catch(() => null);
 
-    registerForPushNotificationsAsync()
-      .then((e) => {
-        console.log("🚀 ~ file: Main.tsx:187 ~ .then ~ e:", e);
-        updateNotificationId({ notificationId: e?.data as string });
-      })
-      .catch((e) => {
-        console.log(e);
-      });
+        if (!token || !isMounted) return;
 
-    dismissAllNotificationsAsync()
-      .then((e) => {
-        console.log(e);
-      })
-      .catch((e) => {
-        console.log(e);
-      });
+        console.log('Push token:', token);
+        
+        try {
+          const result = await updateNotificationId({ 
+            notificationId: token.data 
+          }).unwrap();
+
+          if (!result.success) {
+            console.log('Failed to save notification token');
+          }
+        } catch (error) {
+          // Silently handle the error
+          console.log('Error saving notification token:', error);
+        }
+      } catch (error) {
+        // Silently handle setup errors
+        console.log('Error in push notification setup:', error);
+      }
+    };
+
+    registerForPushNotifications().catch(console.log);
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {

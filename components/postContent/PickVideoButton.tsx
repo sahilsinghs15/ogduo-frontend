@@ -3,9 +3,9 @@ import React from "react";
 import { VideoIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
-import { Video } from 'expo-av';
 import { useDispatch } from "react-redux";
 import { openToast } from "../../redux/slice/toast/toast";
+import { useMediaPermissions } from '../../hooks/useMediaPermissions';
 
 export default function PickVideoButton({
   handleSetPhotoPost,
@@ -19,22 +19,19 @@ export default function PickVideoButton({
   const dark = useGetMode();
   const backgroundColor = dark ? "white" : "black";
   const backgroundColorView = !dark ? "white" : "black";
-  const rippleColor = !dark ? "#ABABAB" : "#55555500";
   const dispatch = useDispatch();
+  const rippleColor = !dark ? "#ABABAB" : "#55555500";
+  const { requestMediaPermissions } = useMediaPermissions();
 
   const pickVideo = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
-        return;
-      }
+      const hasPermission = await requestMediaPermissions();
+      if (!hasPermission) return;
 
-      setIsCompressing(true);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
-        quality: 1,
+        quality: 0.5,
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -45,9 +42,7 @@ export default function PickVideoButton({
         );
       }
     } catch (error) {
-      dispatch(openToast({ text: "Failed to process video", type: "Failed" }));
-    } finally {
-      setIsCompressing(false);
+      dispatch(openToast({ text: "Failed to select video", type: "Failed" }));
     }
   };
 
@@ -57,8 +52,8 @@ export default function PickVideoButton({
         borderColor: "#B4B4B488",
         borderWidth: 1,
         width: 100,
-        borderRadius: 10,
         backgroundColor: backgroundColorView,
+        borderRadius: 10,
         overflow: "hidden",
         height: 100,
         justifyContent: "center",

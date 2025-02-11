@@ -41,6 +41,7 @@ import Main from "./routes/Main";
 import Auth from "./routes/Auth";
 import { useTokenValidQuery } from "./redux/api/user";
 import { signOut } from "./redux/slice/user";
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 enableFreeze(true);
 
@@ -162,17 +163,38 @@ const Navigation = () => {
   });
 
   const { data: tokenValid, error: tokenError } = useTokenValidQuery(null, {
-    pollingInterval: 300000,
-    skip: !userAuthenticated
+    skip: !userAuthenticated,
+    pollingInterval: 600000,
   });
 
+  // Log token validation status
   useEffect(() => {
-    console.log('Token validation:', { tokenValid, tokenError, userAuthenticated });
-    if (tokenError || (tokenValid && !tokenValid.valid)) {
-      console.log('Token invalid, logging out');
+    if (userAuthenticated) {
+      console.log('Token validation status:', {
+        tokenValid,
+        tokenError,
+        userAuthenticated: !!userAuthenticated
+      });
+    }
+  }, [tokenValid, tokenError, userAuthenticated]);
+
+  // Only logout on explicit invalid token
+  useEffect(() => {
+    if (!userAuthenticated) return;
+
+    // Only logout on auth errors
+    if (tokenError?.status === 401 || tokenError?.status === 403) {
+      console.log('Token invalid - auth error');
+      dispatch(signOut());
+      return;
+    }
+
+    // Or if token is explicitly invalid
+    if (tokenValid && tokenValid.valid === false) {
+      console.log('Token explicitly invalidated');
       dispatch(signOut());
     }
-  }, [tokenError, tokenValid, userAuthenticated]);
+  }, [tokenValid?.valid, tokenError]);
 
   useEffect(() => {
     if (fontsLoaded) {

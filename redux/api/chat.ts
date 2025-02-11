@@ -33,12 +33,12 @@ export const chatApi = createApi({
   tagTypes: ["chats"],
   endpoints: (builder) => ({
     getAllChats: builder.query<{ chatList: IChatList[] }, null>({
-      query: () => `/get-all-chats`,
+      query: () => `http://192.168.0.100:8080/get-all-chats`,
 
       extraOptions: { maxRetries: 2 },
     }),
     getAllMessages: builder.query<{ chatList: IChatList }, { id: string }>({
-      query: ({id}) => `/get-all-messages?id=${id}`,
+      query: ({id}) => `http://192.168.0.100:8080/get-all-messages?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
   }),

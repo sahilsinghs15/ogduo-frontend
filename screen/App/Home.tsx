@@ -1,4 +1,4 @@
-import { Text, Pressable, Image, View } from "react-native";
+import { Text, Pressable, Image, View, Platform } from "react-native";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import AnimatedScreen from "../../components/global/AnimatedScreen";
@@ -17,6 +17,9 @@ import { useGetAllChatsQuery } from "../../redux/api/chat";
 import socket from "../../util/socket";
 import { useNavigationState } from "@react-navigation/native";
 import * as MediaLibrary from 'expo-media-library';
+import { useMediaPermissions } from '../../hooks/useMediaPermissions';
+import { openToast } from '../../redux/slice/toast/toast';
+import Constants from 'expo-constants';
 
 type PhotoAsset = MediaLibrary.Asset;
 
@@ -27,6 +30,7 @@ export default function Home({ navigation }: DrawerHomeProp) {
   const color = isDark ? "white" : "black";
   const dispatch = useAppDispatch();
   const [isAll, setIsAll] = useState(true);
+  const { requestMediaPermissions } = useMediaPermissions();
   const [photos, setPhotos] = useState<PhotoAsset[]>([]);
 
   // useGetRandomPostsQuery(null);
@@ -86,26 +90,46 @@ export default function Home({ navigation }: DrawerHomeProp) {
     });
   }, [color, isAll]);
 
-  async function hasPermission() {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    return status === 'granted';
-  }
-
   useEffect(() => {
-    async function getPhotos() {
-      if (!(await hasPermission())) {
-        return;
-      }
+    let mounted = true;
 
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        first: 20,
-        mediaType: MediaLibrary.MediaType.photo,
-        sortBy: [MediaLibrary.SortBy.creationTime],
-      });
-      
-      setPhotos(assets);
+    async function getPhotos() {
+      try {
+        const hasPermission = await requestMediaPermissions();
+        if (!hasPermission || !mounted) return;
+
+        // Skip media library access in Expo Go Android
+        if (Platform.OS === 'android' && Constants.appOwnership === 'expo') {
+          console.log('Media library access limited in Expo Go');
+          return;
+        }
+
+        const { assets } = await MediaLibrary.getAssetsAsync({
+          first: 20,
+          mediaType: MediaLibrary.MediaType.photo,
+          sortBy: [MediaLibrary.SortBy.creationTime],
+        });
+
+        if (mounted) {
+          setPhotos(assets);
+        }
+      } catch (error) {
+        console.log('Error fetching photos:', error);
+        // Only show error if not in Expo Go Android
+        if (!(Platform.OS === 'android' && Constants.appOwnership === 'expo')) {
+          dispatch(openToast({ 
+            text: "Unable to load photos", 
+            type: "Failed" 
+          }));
+        }
+      }
     }
+
     getPhotos();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (

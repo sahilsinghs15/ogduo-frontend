@@ -12,7 +12,7 @@ interface loginResult {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/auth`,
+    baseUrl: "http://192.168.0.100:8081",
   }),
   tagTypes: ["user"],
   endpoints: (builder) => ({
@@ -24,7 +24,7 @@ export const authApi = createApi({
       }
     >({
       query: (payload) => ({
-        url: "http://192.168.0.104:80/api/auth/login",
+        url: "http://192.168.0.100:8080/api/auth/login",
         method: "POST",
         body: payload,
         headers: {
@@ -45,25 +45,14 @@ export const authApi = createApi({
         name: string;
       }
     >({
-      query: (payload) => {
-        console.log('Making register request with:', payload);
-        return {
-          url: "http://192.168.0.104:80/api/auth/signup",
-          method: "POST",
-          body: payload,
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        };
-      },
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          console.log('Register success:', data);
-        } catch (error) {
-          console.log('Register query error:', error);
-        }
-      },
+      query: (payload) => ({
+        url: "http://192.168.0.100:8080/api/auth/signup",
+        method: "POST",
+        body: payload,
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      }),
     }),
   }),
 });

@@ -51,7 +51,7 @@ export const servicesApi = createApi({
 
         formData.append("photo", blob);
         return {
-          url: "/upload-photo",
+          url: "http://192.168.0.100:8080/upload-photo",
           method: "POST",
           body: formData,
           headers: {
@@ -77,7 +77,7 @@ export const servicesApi = createApi({
 
         formData.append("audio", blob);
         return {
-          url: "/upload-audio",
+          url: "http://192.168.0.100:8080/upload-audio",
           method: "POST",
           body: formData,
           headers: {
@@ -101,7 +101,7 @@ export const servicesApi = createApi({
 
         formData.append("video", blob);
         return {
-          url: "/upload-video",
+          url: "http://192.168.0.100:8080/upload-video",
           method: "POST",
           body: formData,
           headers: {
@@ -112,7 +112,7 @@ export const servicesApi = createApi({
     }),
     postContent: builder.mutation<{ msg: string }, IPostContent>({
       query: (payload) => ({
-        url: "/post",
+        url: "http://192.168.0.100:8080/post",
         method: "POST",
 
         body: payload,
@@ -127,37 +127,37 @@ export const servicesApi = createApi({
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/all-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `http://192.168.0.100:8080/all-posts?take=${take}&skip=${skip}`,
       providesTags: ["post"],
       extraOptions: { maxRetries: 2 },
     }),
     getSinglePost: builder.query<{ posts: IPost }, { id: string }>({
-      query: ({ id }) => `/single-post?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/single-post?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     getRandomPosts: builder.query<{ posts: IPost[] }, null>({
-      query: () => "/random-posts",
+      query: () => "http://192.168.0.100:8080/random-posts",
       extraOptions: { maxRetries: 2 },
     }),
     getRandomPeople: builder.query<{ people: IPerson[] }, null>({
-      query: () => "/random-people",
+      query: () => "http://192.168.0.100:8080/random-people",
       extraOptions: { maxRetries: 2 },
     }),
     searchPosts: builder.query<{ posts: IPost[] }, { q: string }>({
-      query: ({ q }) => `/search-posts?q=${q}`,
+      query: ({ q }) => `http://192.168.0.100:8080/search-posts?q=${q}`,
       extraOptions: { maxRetries: 0 },
     }),
     searchPeople: builder.query<{ people: IPerson[] }, { q: string }>({
-      query: ({ q }) => `/search-people?q=${q}`,
+      query: ({ q }) => `http://192.168.0.100:8080/search-people?q=${q}`,
       extraOptions: { maxRetries: 0 },
     }),
     followUser: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `/follow?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/follow?id=${id}`,
       extraOptions: { maxRetries: 0 },
     }),
 
     likePost: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `/like-post?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/like-post?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     postComment: builder.mutation<
@@ -165,7 +165,7 @@ export const servicesApi = createApi({
       { id: string; comment: string }
     >({
       query: (payload) => ({
-        url: "/post-comment",
+        url: "http://192.168.0.100:8080/post-comment",
         method: "POST",
 
         body: payload,
@@ -175,14 +175,14 @@ export const servicesApi = createApi({
       }),
     }),
     getCommentByPost: builder.query<{ comment: IComment[] }, { id: string }>({
-      query: ({ id }) => `/get-postComment?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/get-postComment?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     getFollowedPosts: builder.query<
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/followed-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `http://192.168.0.100:8080/followed-posts?take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
@@ -190,7 +190,7 @@ export const servicesApi = createApi({
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/my-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `http://192.168.0.100:8080/my-posts?take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
@@ -199,12 +199,12 @@ export const servicesApi = createApi({
       { take: number; skip: number; id: string }
     >({
       query: ({ take, skip, id }) =>
-        `/guest-posts?id=${id}&take=${take}&skip=${skip}`,
+        `http://192.168.0.100:8080/guest-posts?id=${id}&take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
     repost: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `/re-post?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/re-post?id=${id}`,
     }),
     deletePostById: builder.mutation<
       { msg: string },
@@ -214,7 +214,7 @@ export const servicesApi = createApi({
     >({
       query: ({ id }) => {
         return {
-          url: "/delete-post",
+          url: "http://192.168.0.100:8080/delete-post",
           method: "DELETE",
           body: { id },
           headers: {

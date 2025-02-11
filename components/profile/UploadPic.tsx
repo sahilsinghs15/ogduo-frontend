@@ -5,38 +5,36 @@ import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
 import { openToast } from "../../redux/slice/toast/toast";
+import { useMediaPermissions } from '../../hooks/useMediaPermissions';
 
-export default function PickImageButton({
+export default function UploadPic({
   handleSetPhotoPost,
 }: {
-  handleSetPhotoPost: (mimeType: string, uri: string, size: number) => void;
+  handleSetPhotoPost: (mimeType: string, uri: string) => void;
 }) {
   const dark = useGetMode();
   const borderColor = dark ? "white" : "black";
   const rippleColor = !dark ? "#ABABAB" : "#55555500";
   const dispatch = useAppDispatch();
+  const { requestMediaPermissions } = useMediaPermissions();
 
   const pickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        dispatch(openToast({ text: "Permission denied", type: "Failed" }));
-        return;
-      }
+      const hasPermission = await requestMediaPermissions();
+      if (!hasPermission) return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.3,
+        quality: 0.5,
       });
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         handleSetPhotoPost(
           asset.mimeType || 'image/jpeg',
-          asset.uri,
-          asset.fileSize || 0
+          asset.uri
         );
       }
     } catch (error) {

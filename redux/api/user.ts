@@ -19,7 +19,7 @@ interface loginResult {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.EXPO_PUBLIC_API_URL,
+    baseUrl: "http://192.168.0.100:8080",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.token;
       if (token) {
@@ -31,41 +31,52 @@ export const userApi = createApi({
   tagTypes: ["user", "guest"],
   endpoints: (builder) => ({
     getUser: builder.query<{ data: IUSerData }, null>({
-      query: () => "/api/user/get-user",
+      query: () => "http://192.168.0.100:8080/api/user/get-user",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     logout: builder.query<{ msg: string }, null>({
-      query: () => "/api/user/logout",
+      query: () => "http://192.168.0.100:8080/api/user/logout",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     getGuest: builder.query<{ data: IGuestData }, { id: string }>({
-      query: ({ id }) => `/api/user/get-guest?id=${id}`,
+      query: ({ id }) => `http://192.168.0.100:8080/api/user/get-guest?id=${id}`,
       providesTags: ["guest"],
       keepUnusedDataFor: 10,
     }),
     getNotifications: builder.query<{ notifications: Notifications[] }, null>({
-      query: () => `/api/user/get-notifications`,
+      query: () => `http://192.168.0.100:8080/api/user/get-notifications`,
       keepUnusedDataFor: 10,
     }),
     getFollowDetails: builder.query<
       { following: string; followers: string },
       null
     >({
-      query: () => "/api/user/get-follows",
+      query: () => "http://192.168.0.100:8080/api/user/get-follows",
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     tokenValid: builder.query<{ valid: boolean }, null>({
       query: () => ({
-        url: '/api/auth/validate',
+        url: 'http://192.168.0.100:8080/api/user/get-user',
         method: 'GET',
       }),
-      transformErrorResponse: (response) => {
-        console.log('Token validation error:', response);
-        return response;
-      }
+      transformResponse: (response: any) => {
+        console.log('Token validation response:', response);
+        if (response?.data) {
+          return { valid: true };
+        }
+        return { valid: false };
+      },
+      transformErrorResponse: (error: any) => {
+        console.log('Token validation error:', error);
+        if (error.status === 401 || error.status === 403) {
+          return { valid: false };
+        }
+        return { valid: true };
+      },
+      keepUnusedDataFor: 300,
     }),
     uploadProfilePicture: builder.mutation<
       { photo: string },
@@ -81,7 +92,7 @@ export const userApi = createApi({
 
         formData.append("photo", blob);
         return {
-          url: "/api/user/update-photo",
+          url: "http://192.168.0.100:8080/api/user/update-photo",
           method: "POST",
           body: formData,
           headers: {
@@ -91,30 +102,42 @@ export const userApi = createApi({
       },
       invalidatesTags: ["user"],
     }),
-    updateNotificationId: builder.mutation<any, { notificationId: string }>({
-      query: (payload) => {
-        return {
-          url: "/api/user/update-notification-id",
-          method: "PUT",
-          body: { notificationId: payload.notificationId },
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        };
-      },
+    updateNotificationId: builder.mutation<
+      { success: boolean },
+      { notificationId: string }
+    >({
+      query: (payload) => ({
+        url: 'http://192.168.0.100:8080/api/user/update-notification-id',
+        method: 'PUT',
+        body: payload,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (response: any) => ({
+        success: true,
+        ...response
+      }),
+      transformErrorResponse: (error: any) => ({
+        success: false,
+        error: error?.data?.message || 'Failed to update notification token'
+      }),
+      extraOptions: {
+        maxRetries: 2
+      }
     }),
     getFollowingList: builder.query<
       FollowingData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/api/user/get-following?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `http://192.168.0.100:8080/api/user/get-following?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     getFollowersList: builder.query<
       FollowData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `/api/user/get-followers?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `http://192.168.0.100:8080/api/user/get-followers?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     updateData: builder.mutation<
@@ -128,7 +151,7 @@ export const userApi = createApi({
     >({
       query: ({ userName, password, newPassword, name }) => {
         return {
-          url: "/api/user/update-data",
+          url: "http://192.168.0.100:8080/api/user/update-data",
           method: "PUT",
           body: { userName, password, newPassword, name },
           headers: {
@@ -149,7 +172,7 @@ export const userApi = createApi({
     >({
       query: ({ password }) => {
         return {
-          url: "/api/user/delete-account",
+          url: "http://192.168.0.100:8080/api/user/delete-account",
           method: "DELETE",
           body: { password },
           headers: {
