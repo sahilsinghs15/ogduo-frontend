@@ -42,6 +42,7 @@ import Auth from "./routes/Auth";
 import { useTokenValidQuery } from "./redux/api/user";
 import { signOut } from "./redux/slice/user";
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 enableFreeze(true);
 
@@ -54,21 +55,25 @@ const persistor = persistStore(store);
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  console.log("App component mounting...");
   return (
-    <Provider store={store}>
-      <PersistGate 
-        loading={<View style={{flex:1, backgroundColor: 'black'}} />} 
-        persistor={persistor}
-        onBeforeLift={() => {
-          console.log("PersistGate before lift...");
-        }}
-      >
-        <AppContent />
-      </PersistGate>
-    </Provider>
+    <GestureHandlerRootView style={styles.container}>
+      <Provider store={store}>
+        <PersistGate 
+          loading={<View style={{flex:1, backgroundColor: 'black'}} />} 
+          persistor={persistor}
+        >
+          <AppContent />
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 function AppContent() {
   console.log("AppContent mounting...");
@@ -178,19 +183,19 @@ const Navigation = () => {
     }
   }, [tokenValid, tokenError, userAuthenticated]);
 
-  // Only logout on explicit invalid token
+  // Only logout on explicit 401 errors
   useEffect(() => {
     if (!userAuthenticated) return;
 
-    // Only logout on auth errors
-    if (tokenError?.status === 401 || tokenError?.status === 403) {
+    // Only logout on explicit 401 errors
+    if (tokenError && 'status' in tokenError && tokenError.status === 401) {
       console.log('Token invalid - auth error');
       dispatch(signOut());
       return;
     }
 
-    // Or if token is explicitly invalid
-    if (tokenValid && tokenValid.valid === false) {
+    // Only logout if token is explicitly invalid
+    if (tokenValid?.valid === false) {
       console.log('Token explicitly invalidated');
       dispatch(signOut());
     }

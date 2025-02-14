@@ -8,6 +8,7 @@ import {
   Dimensions,
   Keyboard,
   useWindowDimensions,
+  StyleSheet,
 } from "react-native";
 import AnimatedScreen from "../../components/global/AnimatedScreen";
 import { CameraIcon, CloseCircleIcon } from "../../components/icons";
@@ -29,10 +30,10 @@ import { ActivityIndicator } from "react-native-paper";
 import {
   usePostContentMutation,
   useUploadAudioMutation,
-  useUploadPhotoMutation,
   useUploadVideoMutation,
+  useUploadPostMutation,
 } from "../../redux/api/services";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import {
   closeLoadingModal,
   openLoadingModal,
@@ -51,12 +52,17 @@ import { AnimatedCircularProgress } from "react-native-circular-progress";
 
 import * as Progress from "react-native-progress";
 import * as MediaLibrary from 'expo-media-library';
+import Constants from 'expo-constants';
+import { IPostContent } from "../../types/api";
+import uuid from 'react-native-uuid';
+
 
 const width = Dimensions.get("window").width;
 export default function PostContent({ navigation }: PostContentProp) {
   const dark = useGetMode();
   const dispatch = useAppDispatch();
   const [photos, setPhotos] = useState<MediaLibrary.Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [postPhoto, setPostPhoto] = useState<{
     mimeType: string;
     uri: string;
@@ -157,18 +163,45 @@ export default function PostContent({ navigation }: PostContentProp) {
   }
 
   useEffect(() => {
-    async function getPicture() {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') return;
+    let mounted = true;
 
-      const { assets } = await MediaLibrary.getAssetsAsync({
-        first: 20,
-        mediaType: MediaLibrary.MediaType.photo,
-        sortBy: [MediaLibrary.SortBy.creationTime]
-      });
-      setPhotos(assets);
+    async function getPicture() {
+      try {
+        // Skip media library access in Expo Go
+        if (Platform.OS === 'android' && Constants.appOwnership === 'expo') {
+          console.log('Media library access limited in Expo Go');
+          return;
+        }
+
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted' || !mounted) return;
+
+        const { assets } = await MediaLibrary.getAssetsAsync({
+          first: 20,
+          mediaType: MediaLibrary.MediaType.photo,
+          sortBy: [MediaLibrary.SortBy.creationTime]
+        });
+
+        if (mounted) {
+          setPhotos(assets);
+        }
+      } catch (error) {
+        console.log('Error accessing media library:', error);
+        // Only show error if not in Expo Go
+        if (!(Platform.OS === 'android' && Constants.appOwnership === 'expo')) {
+          dispatch(openToast({ 
+            text: "Unable to access media library", 
+            type: "Failed" 
+          }));
+        }
+      }
     }
+
     getPicture();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -181,32 +214,50 @@ export default function PostContent({ navigation }: PostContentProp) {
     };
   }, [postAudio]);
 
-  const [photo] = useUploadPhotoMutation();
+  const [uploadPost] = useUploadPostMutation();
   const [audio] = useUploadAudioMutation();
   const [video] = useUploadVideoMutation();
   const [postContent] = usePostContentMutation();
   useEffect(() => {
     if (postPhoto?.mimeType.startsWith("image/")) {
+      console.log("Starting image upload...");
+      setIsLoading(true);
       setDone(false);
-      photo(postPhoto)
+      uploadPost({
+        type: 'image',
+        content: postPhoto,
+        caption: postText
+      })
         .unwrap()
         .then((r:any) => {
+          console.log("Image upload success:", r);
           setDone(true);
+          setIsLoading(false);
           setPhotoServer(r.photo);
         })
         .catch((e:any) => {
+          console.log("Image upload failed:", e);
           setDone(true);
-
-          dispatch(openToast({ text: "Photo didn't upload", type: "Failed" }));
+          setIsLoading(false);
+          dispatch(openToast({ 
+            text: e.error || "Photo upload failed", 
+            type: "Failed"
+          }));
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
         });
     }
     if (postAudio) {
       console.log(
-        "🚀 ~ file: PostContent.tsx:197 ~ useEffect ~ postAudio:",
+        "🚀 ~ file: PostContent.tsx:206 ~ useEffect ~ postAudio:",
         postAudio
       );
       setDone(false);
-      audio(postAudio)
+      audio({
+        audio: postAudio,
+        caption: postText
+      })
         .unwrap()
         .then((r:any) => {
           setDone(true);
@@ -217,6 +268,9 @@ export default function PostContent({ navigation }: PostContentProp) {
           setDone(true);
 
           dispatch(openToast({ text: "Audio didn't upload", type: "Failed" }));
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
         });
     }
     if (postPhoto?.mimeType.startsWith("video/")) {
@@ -236,7 +290,10 @@ export default function PostContent({ navigation }: PostContentProp) {
           setDone(true);
 
           dispatch(openToast({ text: "video didn't upload", type: "Failed" }));
-        });
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
+        }); 
     }
   }, [postPhoto, postAudio]);
 
@@ -244,106 +301,69 @@ export default function PostContent({ navigation }: PostContentProp) {
     setPostText(text);
   };
 
-  const handlePostContent = () => {
-    Keyboard.dismiss();
-    if (postPhoto?.mimeType.startsWith("image/")) {
-      if (photoServer) {
-        dispatch(openLoadingModal());
-        postContent({
-          photo: {
-            uri: photoServer.uri,
-            height: photoServer.height,
-            width: photoServer.width,
-          },
-          postText,
-        })
-          .then((e:any) => {
-            dispatch(
-              openToast({ text: "Successfully posted", type: "Success" })
-            );
-            navigation.pop();
-            dispatch(closeLoadingModal());
-          })
-          .catch((e:any):any => {
-            dispatch(openToast({ text: "Post failed ", type: "Failed" }));
-            dispatch(closeLoadingModal());
-          });
-      } else {
-        dispatch(
-          openToast({
-            text: "Image didnot upload due to server error",
-            type: "Failed",
-          })
-        );
-      }
-    }
+  const handlePostContent = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Post button clicked");
+      
+      // Check if we have a photo to upload
+      if (postPhoto?.mimeType?.startsWith("image/")) {
+        console.log("Handling image post");
+        if (!photoServer?.uri) {
+          // Wait for photo upload to complete
+          console.log("Uploading photo first...");
+          const uploadResult = await uploadPost({
+            type: 'image',
+            content: postPhoto,
+            caption: postText
+          }).unwrap();
+          
+          console.log("Upload result:", uploadResult);
+          setPhotoServer(uploadResult.photo);
+          
+          // Now create the post with the uploaded photo
+          const payload: IPostContent = {
+            type: "image",
+            caption: postText,
+            photo: {
+              id: uuid.v4() as string,
+              uri: uploadResult.photo.uri,
+              height: uploadResult.photo.height,
+              width: uploadResult.photo.width,
+            }
+          };
 
-    if (postAudio) {
-      if (fileToServer) {
-        dispatch(openLoadingModal());
-        postContent({ audioUri: fileToServer, postText, audioTitle: "Audio" })
-          .then((e:any) => {
-            dispatch(
-              openToast({ text: "Successfully posted", type: "Success" })
-            );
-            navigation.pop();
-            dispatch(closeLoadingModal());
-          })
-          .catch((e:any) => {
-            dispatch(openToast({ text: "Post failed ", type: "Failed" }));
-            dispatch(closeLoadingModal());
-          });
-      } else {
-        dispatch(
-          openToast({
-            text: "Audio didnot upload due to server error",
-            type: "Failed",
-          })
-        );
+          console.log("Sending image payload:", payload);
+          const response = await postContent(payload).unwrap();
+          console.log("Post response:", response);
+        }
+      } else if (postText) {
+        // Handle text-only post
+        console.log("Handling text post");
+        const payload: IPostContent = {
+          type: "text",
+          caption: postText
+        };
+
+        console.log("Sending text payload:", payload);
+        const response = await postContent(payload).unwrap();
+        console.log("Post response:", response);
       }
-    }
-    if (postPhoto?.mimeType.startsWith("video/")) {
-      if (fileToServer) {
-        console.log("filetoServer", fileToServer);
-        dispatch(openLoadingModal());
-        postContent({
-          videoUri: fileToServer,
-          videoTitle: videoTitle || "🎥",
-          videoThumbnail,
-          postText,
-        })
-          .then((e:any) => {
-            dispatch(
-              openToast({ text: "Successfully posted", type: "Success" })
-            );
-            navigation.pop();
-            dispatch(closeLoadingModal());
-          })
-          .catch((e:any) => {
-            dispatch(openToast({ text: "Post failed ", type: "Failed" }));
-            dispatch(closeLoadingModal());
-          });
-      } else {
-        dispatch(
-          openToast({
-            text: "Video did not upload due to server error",
-            type: "Failed",
-          })
-        );
-      }
-    }
-    if (postText && !postAudio && !postPhoto) {
-      dispatch(openLoadingModal());
-      postContent({ postText })
-        .then((e:any) => {
-          dispatch(openToast({ text: "Successfully posted", type: "Success" }));
-          navigation.pop();
-          dispatch(closeLoadingModal());
-        })
-        .catch((e:any) => {
-          dispatch(openToast({ text: "Post failed ", type: "Failed" }));
-          dispatch(closeLoadingModal());
-        });
+
+      dispatch(openToast({ text: "Posted successfully!", type: "Success" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
+      navigation.goBack();
+
+    } catch (error) {
+      console.log('Post error:', error);
+      dispatch(openToast({ text: "Failed to create post", type: "Failed" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
+    } finally {
+      setIsLoading(false);
     }
   };
   const [progress, setProgress] = useState(0);
@@ -363,6 +383,8 @@ export default function PostContent({ navigation }: PostContentProp) {
       setProgress(0);
     }
   }, [progress]);
+
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   return (
     <AnimatedScreen>
@@ -568,7 +590,35 @@ export default function PostContent({ navigation }: PostContentProp) {
             />
           </Animated.View>
         )}
+        {isLoading && (
+          <View style={styles.progressContainer}>
+            <Progress.Circle 
+              size={50} 
+              indeterminate={uploadProgress === 0}
+              progress={uploadProgress} 
+              color={dark ? "white" : "black"}
+            />
+            <Text style={[styles.progressText, {color: dark ? "white" : "black"}]}>
+              {uploadProgress === 0 ? 'Preparing...' : `${Math.round(uploadProgress * 100)}%`}
+            </Text>
+          </View>
+        )}
       </View>
     </AnimatedScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  progressContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "white",
+  },
+});

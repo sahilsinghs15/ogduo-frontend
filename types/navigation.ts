@@ -48,6 +48,7 @@ export type RootStackParamList = {
   ChangeData: {
     change: "userName" | "password" | "name";
   };
+  BottomTab: undefined;
 };
 
 export type BottomRootStackParamList = {

@@ -15,18 +15,27 @@ export interface IGuestData extends IUSerData {
 }
 
 export interface IPostContent {
-  photoUri?: string[];
-  audioTitle?: string;
-  audioUri?: string;
+  type: "image" | "video" | "audio" | "text";
+  content?: string;
+  caption?: string;
+  thumbnail?: string;
   photo?: {
+    id: string;
     uri: string;
     height: number;
     width: number;
   };
-  videoUri?: string;
-  videoTitle?: string;
-  postText?: string;
-  videoThumbnail?: string;
+  audio?: {
+    id: string;
+    audioUri: string;
+    audioTitle: string;
+  };
+  video?: {
+    id: string;
+    videoUri: string;
+    videoTitle: string;
+    videoThumbnail: string;
+  };
 }
 
 export interface IPerson {

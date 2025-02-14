@@ -12,7 +12,7 @@ interface loginResult {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://192.168.0.100:8081",
+    baseUrl: `${process.env.EXPO_PUBLIC_BASE_URL}`,
   }),
   tagTypes: ["user"],
   endpoints: (builder) => ({
@@ -24,7 +24,7 @@ export const authApi = createApi({
       }
     >({
       query: (payload) => ({
-        url: "http://192.168.0.100:8080/api/auth/login",
+        url: `${process.env.EXPO_PUBLIC_API_URL}/api/auth/login`,
         method: "POST",
         body: payload,
         headers: {
@@ -46,7 +46,7 @@ export const authApi = createApi({
       }
     >({
       query: (payload) => ({
-        url: "http://192.168.0.100:8080/api/auth/signup",
+        url: `${process.env.EXPO_PUBLIC_API_URL}/api/auth/signup`,
         method: "POST",
         body: payload,
         headers: {

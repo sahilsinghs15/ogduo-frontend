@@ -128,3 +128,7 @@ export const initialDummyChat: ChatType[] = [
     ].reverse() as any,
   },
 ];
+
+export const chatData = [
+  // Your chat dummy data here
+];

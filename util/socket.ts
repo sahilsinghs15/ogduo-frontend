@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { store } from "../redux/store";
 
 let socket: Socket | null = null;
+let reconnectTimer: NodeJS.Timeout | null = null;
 
 const getUserId = async (): Promise<string | undefined> => {
   try {
@@ -34,9 +35,27 @@ const initializeSocket = async () => {
   if (!socket) {
     socket = io(process.env.EXPO_PUBLIC_API_URL as string, {
       autoConnect: true,
-      auth: {
-        token,
-      },
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket connected');
+      socket?.emit('online');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      // Clear any existing timer
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      // Set a new reconnect timer
+      reconnectTimer = setTimeout(() => {
+        socket?.connect();
+      }, 1000);
     });
   }
 

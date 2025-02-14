@@ -133,6 +133,17 @@ export default function Home({ navigation }: DrawerHomeProp) {
   }, []);
 
   return (
-    <AnimatedScreen>{isAll ? <HomeAll /> : <HomeFollowed />}</AnimatedScreen>
+    <AnimatedScreen>
+      <Text
+        style={{
+          fontFamily: "uberBold",
+          fontSize: 30,
+          color,
+        }}
+      >
+        OG DUO
+      </Text>
+      {isAll ? <HomeAll /> : <HomeFollowed />}
+    </AnimatedScreen>
   );
 }

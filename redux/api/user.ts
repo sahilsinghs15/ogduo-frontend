@@ -19,7 +19,7 @@ interface loginResult {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://192.168.0.100:8080",
+    baseUrl: process.env.EXPO_PUBLIC_API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).user.token;
       if (token) {
@@ -31,50 +31,52 @@ export const userApi = createApi({
   tagTypes: ["user", "guest"],
   endpoints: (builder) => ({
     getUser: builder.query<{ data: IUSerData }, null>({
-      query: () => "http://192.168.0.100:8080/api/user/get-user",
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-user`,
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     logout: builder.query<{ msg: string }, null>({
-      query: () => "http://192.168.0.100:8080/api/user/logout",
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/user/logout`,
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     getGuest: builder.query<{ data: IGuestData }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/api/user/get-guest?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-guest?id=${id}`,
       providesTags: ["guest"],
       keepUnusedDataFor: 10,
     }),
     getNotifications: builder.query<{ notifications: Notifications[] }, null>({
-      query: () => `http://192.168.0.100:8080/api/user/get-notifications`,
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-notifications`,
       keepUnusedDataFor: 10,
     }),
     getFollowDetails: builder.query<
       { following: string; followers: string },
       null
     >({
-      query: () => "http://192.168.0.100:8080/api/user/get-follows",
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-follows`,
       providesTags: ["user"],
       extraOptions: { maxRetries: 2 },
     }),
     tokenValid: builder.query<{ valid: boolean }, null>({
       query: () => ({
-        url: 'http://192.168.0.100:8080/api/user/get-user',
+        url: `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-user`,
         method: 'GET',
       }),
       transformResponse: (response: any) => {
-        console.log('Token validation response:', response);
         if (response?.data) {
           return { valid: true };
         }
-        return { valid: false };
+        return { valid: true };
       },
       transformErrorResponse: (error: any) => {
-        console.log('Token validation error:', error);
-        if (error.status === 401 || error.status === 403) {
+        if (error.status === 401) {
           return { valid: false };
         }
         return { valid: true };
+      },
+      extraOptions: {
+        maxRetries: 2,
+        pollingInterval: 600000
       },
       keepUnusedDataFor: 300,
     }),
@@ -92,7 +94,7 @@ export const userApi = createApi({
 
         formData.append("photo", blob);
         return {
-          url: "http://192.168.0.100:8080/api/user/update-photo",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/user/update-photo`,
           method: "POST",
           body: formData,
           headers: {
@@ -107,7 +109,7 @@ export const userApi = createApi({
       { notificationId: string }
     >({
       query: (payload) => ({
-        url: 'http://192.168.0.100:8080/api/user/update-notification-id',
+        url: `${process.env.EXPO_PUBLIC_API_URL}/api/user/update-notification-id`,
         method: 'PUT',
         body: payload,
         headers: {
@@ -130,14 +132,14 @@ export const userApi = createApi({
       FollowingData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `http://192.168.0.100:8080/api/user/get-following?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-following?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     getFollowersList: builder.query<
       FollowData[],
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `http://192.168.0.100:8080/api/user/get-followers?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/user/get-followers?take=${take}&skip=${skip}`,
       providesTags: ["user"],
     }),
     updateData: builder.mutation<
@@ -151,7 +153,7 @@ export const userApi = createApi({
     >({
       query: ({ userName, password, newPassword, name }) => {
         return {
-          url: "http://192.168.0.100:8080/api/user/update-data",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/user/update-data`,
           method: "PUT",
           body: { userName, password, newPassword, name },
           headers: {
@@ -172,7 +174,7 @@ export const userApi = createApi({
     >({
       query: ({ password }) => {
         return {
-          url: "http://192.168.0.100:8080/api/user/delete-account",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/user/delete-account`,
           method: "DELETE",
           body: { password },
           headers: {

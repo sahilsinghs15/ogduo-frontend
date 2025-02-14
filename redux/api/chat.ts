@@ -20,7 +20,7 @@ interface loginResult {
 export const chatApi = createApi({
   reducerPath: "chatApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/chat`,
+    baseUrl: `${process.env.EXPO_PUBLIC_BASE_URL}/api/chat`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.user?.token;
       // If we have a token, set it in the header
@@ -33,12 +33,12 @@ export const chatApi = createApi({
   tagTypes: ["chats"],
   endpoints: (builder) => ({
     getAllChats: builder.query<{ chatList: IChatList[] }, null>({
-      query: () => `http://192.168.0.100:8080/get-all-chats`,
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/get-all-chats`,
 
       extraOptions: { maxRetries: 2 },
     }),
     getAllMessages: builder.query<{ chatList: IChatList }, { id: string }>({
-      query: ({id}) => `http://192.168.0.100:8080/get-all-messages?id=${id}`,
+      query: ({id}) => `${process.env.EXPO_PUBLIC_API_URL}/get-all-messages?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
   }),

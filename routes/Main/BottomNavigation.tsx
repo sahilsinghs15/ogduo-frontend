@@ -27,13 +27,17 @@ import Discover from "../../screen/App/Discover";
 import Messages from "../../screen/App/Messages";
 import DrawerNavigator from "./DrawerNavigation";
 import Notifications from "../../screen/App/Notifications";
+import Profile from "../../screen/App/Profile";
 
 import { useAppDispatch, useAppSelector } from "../../redux/hooks/hooks";
 
 import SearchBar from "../../components/discover/SearchBar";
 import { Platform, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from '@react-navigation/native';
+
 const Tab = createBottomTabNavigator<BottomRootStackParamList>();
+
 export function BottomTabNavigator() {
   const dark = useGetMode();
   const dispatch = useAppDispatch();
@@ -45,6 +49,8 @@ export function BottomTabNavigator() {
   const insets = useSafeAreaInsets();
   const isHighEndDevice = useAppSelector((state) => state?.prefs?.isHighEnd);
   const borderColor = isDark ? "#FFFFFF7D" : "#4545452D";
+  const navigation = useNavigation();
+
   return (
     <Tab.Navigator
       tabBar={(props) => (
@@ -311,6 +317,28 @@ export function BottomTabNavigator() {
           headerBackgroundContainerStyle: undefined,
         }}
       />
+      <Tab.Screen
+        name="ProfileButton"
+        component={EmptyComponent}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Profile');
+          },
+        }}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <ProfileButton
+              color={color}
+              size={30}
+              onPress={() => navigation.navigate('Profile')}
+            />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
+
+// Add empty component for profile button tab
+const EmptyComponent = () => null;

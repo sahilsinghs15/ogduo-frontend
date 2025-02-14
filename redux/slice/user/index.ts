@@ -88,12 +88,11 @@ export const userSlice = createSlice({
     builder.addMatcher(
       userApi.endpoints.tokenValid.matchRejected,
       (state, action) => {
-        console.log('Token validation rejected:', action);
-        // Only invalidate token on auth errors
-        if (action.error.status === 401 || action.error.status === 403) {
+        // Only clear token on explicit 401 errors
+        if (action.error.status === 401) {
           state.token = null;
         }
-        // Ignore other types of errors
+        // Ignore other errors
       }
     );
   },

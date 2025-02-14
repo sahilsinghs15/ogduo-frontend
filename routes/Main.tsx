@@ -45,7 +45,7 @@ import * as TaskManager from "expo-task-manager";
 import { AppState } from "react-native";
 
 import { updateOnlineIds } from "../redux/slice/chat/online";
-import { openToast } from "../redux/slice/toast/toast";
+import { closeToast, openToast } from "../redux/slice/toast/toast";
 import { IMessageSocket } from "../types/socket";
 
 import useSocket from "../hooks/Socket";
@@ -97,47 +97,32 @@ export default function Main() {
     let isMounted = true;
 
     const registerForPushNotifications = async () => {
+      if (!isMounted) return;
+
       try {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        
-        if (finalStatus !== 'granted') {
-          console.log('Push notifications permission not granted');
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Notification permission denied');
           return;
         }
 
         const token = await Notifications.getExpoPushTokenAsync({
           projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
-        }).catch(() => null);
+        });
 
         if (!token || !isMounted) return;
 
-        console.log('Push token:', token);
-        
-        try {
-          const result = await updateNotificationId({ 
-            notificationId: token.data 
-          }).unwrap();
-
-          if (!result.success) {
-            console.log('Failed to save notification token');
-          }
-        } catch (error) {
-          // Silently handle the error
+        await updateNotificationId({ 
+          notificationId: token.data 
+        }).unwrap().catch(error => {
           console.log('Error saving notification token:', error);
-        }
+        });
       } catch (error) {
-        // Silently handle setup errors
-        console.log('Error in push notification setup:', error);
+        console.log('Error in notification setup:', error);
       }
     };
 
-    registerForPushNotifications().catch(console.log);
+    registerForPushNotifications();
 
     return () => {
       isMounted = false;
@@ -147,6 +132,9 @@ export default function Main() {
   useEffect(() => {
     socket?.on("connected", (connected) => {
       dispatch(openToast({ text: "Connected", type: "Success" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     });
     return () => {
       socket?.off("connected");
@@ -250,21 +238,26 @@ export default function Main() {
         appState.current.match(/inactive|background/) &&
         nextAppState === "active"
       ) {
+        socket?.connect();
         socket?.emit("online");
         console.log("App has come to the foreground!");
       }
 
       appState.current = nextAppState;
       setAppStateVisible(appState.current);
-      console.log("AppState", appState.current);
+
       if (appState.current === "background") {
         socket?.emit("away");
       }
     });
+
+    socket?.emit("online");
+
     return () => {
       subscription.remove();
+      socket?.emit("away");
     };
-  }, []);
+  }, [socket]);
   const isHighEndDevice = useAppSelector((state) => state?.prefs?.isHighEnd);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
@@ -500,6 +493,36 @@ export default function Main() {
             animation: "none",
             headerStyle: { backgroundColor },
             headerTitle: "",
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="BottomTab"
+          component={BottomTabNavigator}
+          options={{
+            headerShown: true,
+            headerTransparent: true,
+            headerTitle: "",
+            headerStyle: {
+              backgroundColor: "transparent",
+            },
+            headerRight: () => (
+              <View 
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: '#22c55e', // Modern green color
+                  marginRight: 16,
+                  // Optional: Add subtle shadow
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 1,
+                  elevation: 2,
+                }}
+              />
+            ),
             headerShadowVisible: false,
           }}
         />

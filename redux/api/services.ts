@@ -9,6 +9,8 @@ import {
 } from "../../types/api";
 import storage from "../storage";
 import { RootState } from "../store";
+import { Platform } from "react-native";
+import { chatData } from '../../data/chatDummyData';
 
 interface loginResult {
   msg: string;
@@ -19,7 +21,7 @@ interface loginResult {
 export const servicesApi = createApi({
   reducerPath: "servicesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/services`,
+    baseUrl: `${process.env.EXPO_PUBLIC_BASE_URL}/api/services`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.user?.token;
       // If we have a token, set it in the header
@@ -31,61 +33,93 @@ export const servicesApi = createApi({
   }),
   tagTypes: ["post"],
   endpoints: (builder) => ({
-    uploadPhoto: builder.mutation<
-      {
-        photo: {
-          uri: string;
-          width: number;
-          height: number;
-        };
-      },
-      { mimeType: string; uri: string }
+    uploadPost: builder.mutation<
+      { msg: string },
+      { type: string; content: any; caption?: string }
     >({
       query: (payload) => {
-        const blob: any = {
-          name: `${payload.uri.split("/").splice(-1)}`,
-          type: payload.mimeType,
-          uri: payload.uri,
-        };
         const formData = new FormData();
+        
+        if (payload.content) {
+          const blob: any = {
+            name: payload.content.uri.split("/").pop() || 'image.jpg',
+            type: payload.content.mimeType,
+            uri: Platform.OS === 'android' ? payload.content.uri : payload.content.uri.replace('file://', ''),
+          };
+          formData.append("photo", blob);
+        }
+        
+        if (payload.caption) {
+          formData.append("caption", payload.caption);
+        }
+        formData.append("type", payload.type);
 
-        formData.append("photo", blob);
         return {
-          url: "http://192.168.0.100:8080/upload-photo",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/upload-photo`,
           method: "POST",
           body: formData,
           headers: {
-            "Content-type": "multipart/form-data",
+            "Content-Type": "multipart/form-data",
           },
+          timeout: 10000,
         };
       },
-  
+      // Add proper error handling
+      transformErrorResponse: (error: any) => {
+        console.log('Upload error details:', error);
+        if (error.status === 'FETCH_ERROR') {
+          return { error: 'Network connection failed' };
+        }
+        return {
+          error: error?.data?.message || 'Upload failed'
+        };
+      },
+      // Add retry logic
+      extraOptions: {
+        maxRetries: 2
+      }
     }),
 
     uploadAudio: builder.mutation<
-      { audio: string },
-      { mimeType: string; uri: string; name: string }
+      { msg: string },
+      { audio: any; caption?: string }
     >({
       query: (payload) => {
-        console.log("🚀 ~ file: services.ts:70 ~ payload:", payload)
-        const blob: any = {
-          name: payload.name,
-          type: payload.mimeType,
-          uri: payload.uri,
-        };
         const formData = new FormData();
+        
+        if (payload.audio) {
+          const blob: any = {
+            name: payload.audio.uri.split("/").pop(),
+            type: payload.audio.mimeType,
+            uri: payload.audio.uri,
+          };
+          formData.append("audio", blob);
+        }
+        
+        if (payload.caption) {
+          formData.append("caption", payload.caption);
+        }
 
-        formData.append("audio", blob);
         return {
-          url: "http://192.168.0.100:8080/upload-audio",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/upload-audio`,
           method: "POST",
           body: formData,
           headers: {
-            "Content-type": "multipart/form-data",
+            "Content-Type": "multipart/form-data",
           },
         };
       },
-      invalidatesTags: ["post"],
+      // Add proper error handling
+      transformErrorResponse: (error: any) => {
+        console.log('Audio upload error:', error);
+        return {
+          error: error?.data?.message || 'Audio upload failed'
+        };
+      },
+      // Add retry logic
+      extraOptions: {
+        maxRetries: 2
+      }
     }),
     uploadVideo: builder.mutation<
       { video: string; thumbNail: string },
@@ -101,7 +135,7 @@ export const servicesApi = createApi({
 
         formData.append("video", blob);
         return {
-          url: "http://192.168.0.100:8080/upload-video",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/upload-video`,
           method: "POST",
           body: formData,
           headers: {
@@ -111,53 +145,90 @@ export const servicesApi = createApi({
       },
     }),
     postContent: builder.mutation<{ msg: string }, IPostContent>({
-      query: (payload) => ({
-        url: "http://192.168.0.100:8080/post",
-        method: "POST",
+      query: (payload) => {
+        // Prepare the request body with required fields
+        const requestBody = {
+          postText: payload.caption,
+          type: payload.type,
+          // Add media fields based on type
+          ...(payload.type === 'image' && { 
+            photo: {
+              id: payload.photo?.id || '',
+              uri: payload.photo?.uri || '',
+              height: payload.photo?.height || 0,
+              width: payload.photo?.width || 0
+            }
+          }),
+          ...(payload.type === 'audio' && { 
+            audio: {
+              id: payload.audio?.id || '',
+              audioUri: payload.audio?.audioUri || '',
+              audioTitle: payload.audio?.audioTitle || ''
+            }
+          }),
+          ...(payload.type === 'video' && { 
+            video: {
+              id: payload.video?.id || '',
+              videoUri: payload.video?.videoUri || '',
+              videoTitle: payload.video?.videoTitle || '',
+              videoThumbnail: payload.video?.videoThumbnail || ''
+            }
+          })
+        };
 
-        body: payload,
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      }),
-      invalidatesTags: ["post"],
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/`,
+          method: "POST",
+          body: requestBody,
+          headers: {
+            "Content-type": "application/json",
+          },
+        };
+      },
+      transformErrorResponse: (error: any) => {
+        console.log('Post content error:', error);
+        return {
+          error: error?.data?.message || 'Failed to create post'
+        };
+      },
+      invalidatesTags: ["post"]
     }),
 
     getAllPosts: builder.query<
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `http://192.168.0.100:8080/all-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/all-posts?take=${take}&skip=${skip}`,
       providesTags: ["post"],
       extraOptions: { maxRetries: 2 },
     }),
     getSinglePost: builder.query<{ posts: IPost }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/single-post?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/single-post?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     getRandomPosts: builder.query<{ posts: IPost[] }, null>({
-      query: () => "http://192.168.0.100:8080/random-posts",
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/services/random-posts`,
       extraOptions: { maxRetries: 2 },
     }),
     getRandomPeople: builder.query<{ people: IPerson[] }, null>({
-      query: () => "http://192.168.0.100:8080/random-people",
+      query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/services/random-people`,
       extraOptions: { maxRetries: 2 },
     }),
     searchPosts: builder.query<{ posts: IPost[] }, { q: string }>({
-      query: ({ q }) => `http://192.168.0.100:8080/search-posts?q=${q}`,
+      query: ({ q }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/search-posts?q=${q}`,
       extraOptions: { maxRetries: 0 },
     }),
     searchPeople: builder.query<{ people: IPerson[] }, { q: string }>({
-      query: ({ q }) => `http://192.168.0.100:8080/search-people?q=${q}`,
+      query: ({ q }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/search-people?q=${q}`,
       extraOptions: { maxRetries: 0 },
     }),
     followUser: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/follow?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/follow?id=${id}`,
       extraOptions: { maxRetries: 0 },
     }),
 
     likePost: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/like-post?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/like-post?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     postComment: builder.mutation<
@@ -165,7 +236,7 @@ export const servicesApi = createApi({
       { id: string; comment: string }
     >({
       query: (payload) => ({
-        url: "http://192.168.0.100:8080/post-comment",
+        url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post-comment`,
         method: "POST",
 
         body: payload,
@@ -175,14 +246,14 @@ export const servicesApi = createApi({
       }),
     }),
     getCommentByPost: builder.query<{ comment: IComment[] }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/get-postComment?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/get-postComment?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
     getFollowedPosts: builder.query<
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `http://192.168.0.100:8080/followed-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/followed-posts?take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
@@ -190,7 +261,7 @@ export const servicesApi = createApi({
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `http://192.168.0.100:8080/my-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/my-posts?take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
@@ -199,12 +270,12 @@ export const servicesApi = createApi({
       { take: number; skip: number; id: string }
     >({
       query: ({ take, skip, id }) =>
-        `http://192.168.0.100:8080/guest-posts?id=${id}&take=${take}&skip=${skip}`,
+        `${process.env.EXPO_PUBLIC_API_URL}/api/services/guest-posts?id=${id}&take=${take}&skip=${skip}`,
 
       extraOptions: { maxRetries: 2 },
     }),
     repost: builder.query<{ msg: string }, { id: string }>({
-      query: ({ id }) => `http://192.168.0.100:8080/re-post?id=${id}`,
+      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/re-post?id=${id}`,
     }),
     deletePostById: builder.mutation<
       { msg: string },
@@ -214,7 +285,7 @@ export const servicesApi = createApi({
     >({
       query: ({ id }) => {
         return {
-          url: "http://192.168.0.100:8080/delete-post",
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/delete-post`,
           method: "DELETE",
           body: { id },
           headers: {
@@ -223,11 +294,19 @@ export const servicesApi = createApi({
         };
       },
     }),
+    getAllChats: builder.query<any, null>({
+      queryFn: () => {
+        if (__DEV__) {
+          return { data: chatData };
+        }
+        return { data: [] }; // Return empty data for production
+      }
+    }),
   }),
 });
 
 export const {
-  useUploadPhotoMutation,
+  useUploadPostMutation,
   usePostContentMutation,
   useUploadAudioMutation,
   useUploadVideoMutation,
@@ -250,4 +329,6 @@ export const {
   useLazyGetCommentByPostQuery,
   useLazyGetAllPostsQuery,
   useDeletePostByIdMutation,
+  useGetAllChatsQuery,
 } = servicesApi;
+

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Qui",
-    "slug": "qui",
+    "name": "OG DUO",
+    "slug": "og-duo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,7 +24,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "me.isaacojo.qui"
+      "bundleIdentifier": "me.isaacojo.ogduo"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
@@ -32,7 +32,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "me.isaacojo.qui"
+      "package": "me.isaacojo.ogduo"
     },
     "web": {
       "favicon": "./assets/favicon.png"
