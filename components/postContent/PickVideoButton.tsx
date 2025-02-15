@@ -4,7 +4,7 @@ import { VideoIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 
 export default function PickVideoButton({
   handleSetPhotoPost,
@@ -39,6 +39,9 @@ export default function PickVideoButton({
     } catch (error) {
       console.log('Video picker error:', error);
       dispatch(openToast({ text: "Failed to pick video", type: "Failed" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
 

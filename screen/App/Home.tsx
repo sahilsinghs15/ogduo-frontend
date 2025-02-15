@@ -18,7 +18,7 @@ import socket from "../../util/socket";
 import { useNavigationState } from "@react-navigation/native";
 import * as MediaLibrary from 'expo-media-library';
 import { useMediaPermissions } from '../../hooks/useMediaPermissions';
-import { openToast } from '../../redux/slice/toast/toast';
+import { closeToast, openToast } from '../../redux/slice/toast/toast';
 import Constants from 'expo-constants';
 
 type PhotoAsset = MediaLibrary.Asset;
@@ -121,6 +121,9 @@ export default function Home({ navigation }: DrawerHomeProp) {
             text: "Unable to load photos", 
             type: "Failed" 
           }));
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
         }
       }
     }

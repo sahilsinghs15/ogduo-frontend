@@ -18,7 +18,7 @@ import {
 } from "../../redux/api/services";
 import { IComment } from "../../types/api";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks/hooks";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import CommentBuilder from "../../components/home/post/comment/CommentBuilder";
 import useGetMode from "../../hooks/GetMode";
 import Button from "../../components/global/Buttons/Button";
@@ -60,6 +60,9 @@ export default function PostScreen({ navigation, route }: ViewPost) {
           dispatch(
             openToast({ text: "Failed to get Comments", type: "Failed" })
           );
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
         });
     } else {
       if (singlePostResponse.data?.posts)
@@ -72,6 +75,9 @@ export default function PostScreen({ navigation, route }: ViewPost) {
             dispatch(
               openToast({ text: "Failed to get Comments", type: "Failed" })
             );
+            setTimeout(() => {
+              dispatch(closeToast());
+            }, 2000);
           });
     }
   }, [params?.id]);

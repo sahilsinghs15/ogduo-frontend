@@ -24,7 +24,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { openToast } from "../../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../../redux/slice/toast/toast";
 import { useLoginMutation } from "../../../redux/api/auth";
 import { clearUserData, signOut } from "../../../redux/slice/user";
 import { useForm, Controller } from "react-hook-form";
@@ -78,13 +78,22 @@ export default function ChangeUserName() {
       .unwrap()
       .then((r:any) => {
         dispatch(openToast({ text: r.msg, type: "Success" }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
       })
       .catch((e: any) => {
         if (e.data?.message === "userName already exists") {
           dispatch(openToast({ text: "Username exists", type: "Failed" }));
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
           return;
         }
         dispatch(openToast({ text: e.data?.msg, type: "Failed" }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
       });
   };
   useEffect(() => {

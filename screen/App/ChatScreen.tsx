@@ -34,8 +34,8 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle, } from "react-native-r
 import { ChatModal } from "../../components/messages/ChatList/ChatModal";
 import { Portal } from "react-native-paper";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
-import { openToast } from "../../redux/slice/toast/toast";
-import { useUploadPhotoMutation } from "../../redux/api/services";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
+import { useUploadPostMutation } from "../../redux/api/services";
 import useSocket from "../../hooks/Socket";
 import { useLazyGetAllMessagesQuery } from "../../redux/api/chat";
 import { Image } from "expo-image";
@@ -316,7 +316,7 @@ export default function ChatScreen({ navigation, route }: ChatScreenProp) {
       if (isMe) setIsOpen(true);
     });
   };
-  const [photo] = useUploadPhotoMutation();
+  const [photo] = useUploadPostMutation();
 
   function handleSetPhotoPost(mimeType: string, uri: string, size: number) {
     const id = new BSON.ObjectId();
@@ -333,7 +333,7 @@ export default function ChatScreen({ navigation, route }: ChatScreenProp) {
         chatId: route?.params?.id || (route.params.chatId as string),
       })
     );
-    photo({ mimeType, uri })
+    photo({ type: mimeType, content: { uri, size } })
       .then((r: any) => {
         setSentSuccess(true);
         socket?.emit("newPhoto", {

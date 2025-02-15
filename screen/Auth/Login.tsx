@@ -26,7 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import { useLoginMutation } from "../../redux/api/auth";
 import { clearUserData, signOut } from "../../redux/slice/user";
 import { useForm, Controller } from "react-hook-form";
@@ -73,11 +73,17 @@ export default function Login({ navigation }: LoginScreen) {
     try {
       const result = await login({ userName: data.userName.trim(), password: data.password }).unwrap();
       dispatch(openToast({ text: "Successful Login", type: "Success" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     } catch (error: any) {
       dispatch(openToast({ 
         text: error.data?.message || 'Login failed', 
         type: 'Failed' 
       }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
   useEffect(() => {

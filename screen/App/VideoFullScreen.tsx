@@ -14,7 +14,7 @@ import { AnimatedCircularProgress } from "react-native-circular-progress";
 import { StatusBar } from "expo-status-bar";
 
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import uuid from "react-native-uuid";
 import Feather from "@expo/vector-icons/Feather";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -47,10 +47,16 @@ export default function VideoFull({ navigation, route }: VideoFullScreen) {
         await MediaLibrary.saveToLibraryAsync(fileUri);
         setDone(true);
         dispatch(openToast({ text: "Saved", type: "Info" }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
       }
     } catch (error) {
       setDone(true);
       dispatch(openToast({ text: "Download failed", type: "Failed" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
 

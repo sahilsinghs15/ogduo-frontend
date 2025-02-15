@@ -4,7 +4,7 @@ import { AudioIcon } from "../icons";
 import * as DocumentPicker from 'expo-document-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 
 export default function PickAudioButton({
   handleSetAudioPost,
@@ -38,6 +38,9 @@ export default function PickAudioButton({
         text: "Failed to pick audio", 
         type: "Failed" 
       }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
 

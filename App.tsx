@@ -28,7 +28,7 @@ import { PaperProvider } from "react-native-paper";
 import { enableFreeze } from "react-native-screens";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useAppDispatch, useAppSelector } from "./redux/hooks/hooks";
-import { openToast } from "./redux/slice/toast/toast";
+import { closeToast, openToast } from "./redux/slice/toast/toast";
 import CustomToast from "./components/global/Toast";
 import { LoadingModal } from "./components/global/Modal/LoadingOverlay";
 import Notifications from "./util/notification";
@@ -91,6 +91,9 @@ function AppContent() {
 
     if (netInfo.isConnected === false) {
       dispatch(openToast({ text: "No Internet Connection", type: "Failed" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
 
     return () => {
@@ -107,6 +110,9 @@ function AppContent() {
         text: 'An error occurred', 
         type: 'Failed' 
       }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     };
 
     // Set up error handler

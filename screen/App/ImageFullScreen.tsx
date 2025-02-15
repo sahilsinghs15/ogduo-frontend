@@ -17,7 +17,7 @@ import { useEffect, useLayoutEffect } from "react";
 import axios from "axios";
 
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import { Image, ImageBackground } from "expo-image";
 import uuid from "react-native-uuid";
 import * as FileSystem from "expo-file-system";
@@ -41,10 +41,16 @@ export default function ImageFullScreen({
       );
       const { uri } = await downloadResumable.downloadAsync() as any;
       dispatch(openToast({ text: "Image saved successfully", type: "Info" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
       console.log("File saved to", uri);
     } catch (error) {
       console.error("Download error:", error);
       dispatch(openToast({ text: "Download failed", type: "Error" } as any));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
 

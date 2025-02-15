@@ -26,7 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { openToast } from "../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import { useLoginMutation, useRegisterMutation } from "../../redux/api/auth";
 import { signOut } from "../../redux/slice/user";
 import { useForm, Controller } from "react-hook-form";
@@ -99,6 +99,9 @@ export default function Register({ navigation }: RegisterScreen) {
       
       console.log('Register response:', result);
       dispatch(openToast({ text: "Registration successful", type: "Success" }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
       navigation.replace("Login");
     } catch (error: any) {
       console.log('Register error:', error);
@@ -110,6 +113,9 @@ export default function Register({ navigation }: RegisterScreen) {
         text: errorMessage, 
         type: "Failed" 
       }));
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
     }
   };
   useEffect(() => {

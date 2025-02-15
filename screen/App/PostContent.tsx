@@ -193,6 +193,9 @@ export default function PostContent({ navigation }: PostContentProp) {
             text: "Unable to access media library", 
             type: "Failed" 
           }));
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
         }
       }
     }
@@ -330,7 +333,7 @@ export default function PostContent({ navigation }: PostContentProp) {
               uri: uploadResult.photo.uri,
               height: uploadResult.photo.height,
               width: uploadResult.photo.width,
-            }
+            } 
           };
 
           console.log("Sending image payload:", payload);

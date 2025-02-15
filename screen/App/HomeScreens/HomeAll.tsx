@@ -34,7 +34,7 @@ import {
   useGetRandomPostsQuery,
   useLazyGetAllPostsQuery,
 } from "../../../redux/api/services";
-import { openToast } from "../../../redux/slice/toast/toast";
+import { closeToast, openToast } from "../../../redux/slice/toast/toast";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -94,6 +94,9 @@ export default function HomeAll() {
         dispatch(
           openToast({ text: "Couldn't get recent posts", type: "Failed" })
         );
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
       });
   }, [authId, dispatch, getLazyPost]);
 
