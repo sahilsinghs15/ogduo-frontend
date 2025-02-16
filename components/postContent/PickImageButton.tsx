@@ -4,7 +4,7 @@ import { CameraIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { closeToast, openToast } from "../../redux/slice/toast/toast";
+import { openToast } from "../../redux/slice/toast/toast";
 
 export default function PickImageButton({
   handleSetPhotoPost,
@@ -39,9 +39,6 @@ export default function PickImageButton({
         text: "Failed to pick image", 
         type: "Failed"
       }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
     }
   };
 

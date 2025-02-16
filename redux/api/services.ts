@@ -11,6 +11,7 @@ import storage from "../storage";
 import { RootState } from "../store";
 import { Platform } from "react-native";
 import { chatData } from '../../data/chatDummyData';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface loginResult {
   msg: string;
@@ -18,23 +19,34 @@ interface loginResult {
   data: IUSerData;
 }
 
+// Helper function to get the auth token
+const getAuthToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    return token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return null;
+  }
+};
+
 export const servicesApi = createApi({
   reducerPath: "servicesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_BASE_URL}/api/services`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState)?.user?.token;
-      // If we have a token, set it in the header
+      console.log('Using auth token:', token);
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
       }
       return headers;
     },
+    credentials: 'include',
   }),
   tagTypes: ["post"],
   endpoints: (builder) => ({
     uploadPost: builder.mutation<
-      { msg: string; photo: { uri: string; height: number; width: number } },
+      { msg: string },
       { type: string; content: any; caption?: string }
     >({
       query: (payload) => {
@@ -55,7 +67,7 @@ export const servicesApi = createApi({
         formData.append("type", payload.type);
 
         return {
-          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/upload-post-photo`,
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/upload-photo`,
           method: "POST",
           body: formData,
           headers: {
@@ -144,68 +156,170 @@ export const servicesApi = createApi({
         };
       },
     }),
-    postContent: builder.mutation<{ msg: string }, IPostContent>({
+    postContent: builder.mutation<
+      { msg: string },
+      {
+        postText: string;
+        audioUri?: string;
+        audioTitle?: string;
+        videoUri?: string;
+        videoTitle?: string;
+        videoThumbnail?: string;
+      }
+    >({
       query: (payload) => {
-        // Prepare the request body with required fields
-        const requestBody = {
-          postText: payload.caption,
-          type: payload.type,
-          // Add media fields based on type
-          ...(payload.type === 'image' && { 
-            photo: {
-              id: payload.photo?.id || '',
-              uri: payload.photo?.uri || '',
-              height: payload.photo?.height || 0,
-              width: payload.photo?.width || 0
-            }
-          }),
-          ...(payload.type === 'audio' && { 
-            audio: {
-              id: payload.audio?.id || '',
-              audioUri: payload.audio?.audioUri || '',
-              audioTitle: payload.audio?.audioTitle || ''
-            }
-          }),
-          ...(payload.type === 'video' && { 
-            video: {
-              id: payload.video?.id || '',
-              videoUri: payload.video?.videoUri || '',
-              videoTitle: payload.video?.videoTitle || '',
-              videoThumbnail: payload.video?.videoThumbnail || ''
-            }
-          })
-        };
-
+        console.log('Making text post request:', payload);
         return {
-          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/`,
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post`,
           method: "POST",
-          body: requestBody,
+          body: payload,
           headers: {
-            "Content-type": "application/json",
+            'Content-Type': 'application/json',
           },
         };
       },
-      transformErrorResponse: (error: any) => {
-        console.log('Post content error:', error);
-        return {
-          error: error?.data?.message || 'Failed to create post'
-        };
-      },
-      invalidatesTags: ["post"]
+      invalidatesTags: ["post"],
     }),
 
+    postImage: builder.mutation<
+      { msg: string; photo?: { uri: string; width: number; height: number } },
+      { postText: string; photo: { uri: string; type: string; name: string } }
+    >({
+      query: (payload) => {
+        console.log('Making image post request:', payload);
+        const formData = new FormData();
+        formData.append('postText', payload.postText);
+        formData.append('photo', {
+          uri: payload.photo.uri,
+          type: payload.photo.type,
+          name: payload.photo.name
+        } as any);
+
+        console.log('FormData created for image:', formData);
+
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/image`,
+          method: "POST",
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        };
+      },
+      invalidatesTags: ["post"],
+    }),
+
+    postAudio: builder.mutation<
+      { msg: string },
+      { postText: string; audio: { uri: string; type: string; name: string } }
+    >({
+      query: (payload) => {
+        console.log('postAudio mutation called with payload:', payload);
+        const formData = new FormData();
+        formData.append('postText', payload.postText);
+        formData.append('audio', {
+          uri: payload.audio.uri,
+          type: payload.audio.type,
+          name: payload.audio.name
+        } as any);
+
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/audio`,
+          method: "POST",
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        };
+      },
+      invalidatesTags: ["post"],
+    }),
+
+    postVideo: builder.mutation<
+      { msg: string },
+      { postText: string; video: { uri: string; type: string; name: string } }
+    >({
+      query: (payload) => {
+        console.log('postVideo mutation called with payload:', payload);
+        const formData = new FormData();
+        formData.append('postText', payload.postText);
+        formData.append('video', {
+          uri: payload.video.uri,
+          type: payload.video.type,
+          name: payload.video.name
+        } as any);
+
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/video`,
+          method: "POST",
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        };
+      },
+      invalidatesTags: ["post"],
+    }),
+
+    postComment: builder.mutation<
+      { msg: string },
+      { id: string; comment: string }
+    >({
+      query: (payload) => {
+        console.log('Posting comment:', payload);
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post-comment`,
+          method: "POST",
+          body: payload,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+      invalidatesTags: ["post"],
+    }),
+
+    deletePostById: builder.mutation<
+      { msg: string },
+      {
+        id: string;
+      }
+    >({
+      query: ({ id }) => {
+        console.log('Deleting post:', id);
+        return {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/delete-post`,
+          method: "DELETE",
+          body: { id },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+      invalidatesTags: ["post"],
+    }),
     getAllPosts: builder.query<
       { posts: IPost[] },
       { take: number; skip: number }
     >({
-      query: ({ take, skip }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/all-posts?take=${take}&skip=${skip}`,
+      query: ({ take, skip }) => {
+        console.log('Fetching posts with take:', take, 'skip:', skip);
+        return `${process.env.EXPO_PUBLIC_API_URL}/api/services/all-posts?take=${take}&skip=${skip}`;
+      },
       providesTags: ["post"],
-      extraOptions: { maxRetries: 2 },
     }),
-    getSinglePost: builder.query<{ posts: IPost }, { id: string }>({
-      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/single-post?id=${id}`,
-      extraOptions: { maxRetries: 2 },
+
+    getSinglePost: builder.query<
+      { post: IPost },
+      { id: string }
+    >({
+      query: ({ id }) => {
+        console.log('Fetching single post with id:', id);
+        return `${process.env.EXPO_PUBLIC_API_URL}/api/services/single-post?id=${id}`;
+      },
+      providesTags: ["post"],
     }),
+
     getRandomPosts: builder.query<{ posts: IPost[] }, null>({
       query: () => `${process.env.EXPO_PUBLIC_API_URL}/api/services/random-posts`,
       extraOptions: { maxRetries: 2 },
@@ -231,23 +345,14 @@ export const servicesApi = createApi({
       query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/like-post?id=${id}`,
       extraOptions: { maxRetries: 2 },
     }),
-    postComment: builder.mutation<
-      { msg: string },
-      { id: string; comment: string }
+    getCommentByPost: builder.query<
+      { comment: IComment[] },
+      { id: string }
     >({
-      query: (payload) => ({
-        url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post-comment`,
-        method: "POST",
-
-        body: payload,
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      }),
-    }),
-    getCommentByPost: builder.query<{ comment: IComment[] }, { id: string }>({
-      query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/get-postComment?id=${id}`,
-      extraOptions: { maxRetries: 2 },
+      query: ({ id }) => {
+        console.log('Fetching comments for post:', id);
+        return `${process.env.EXPO_PUBLIC_API_URL}/api/services/get-postComment?id=${id}`;
+      },
     }),
     getFollowedPosts: builder.query<
       { posts: IPost[] },
@@ -276,23 +381,7 @@ export const servicesApi = createApi({
     }),
     repost: builder.query<{ msg: string }, { id: string }>({
       query: ({ id }) => `${process.env.EXPO_PUBLIC_API_URL}/api/services/re-post?id=${id}`,
-    }),
-    deletePostById: builder.mutation<
-      { msg: string },
-      {
-        id: string;
-      }
-    >({
-      query: ({ id }) => {
-        return {
-          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/delete-post`,
-          method: "DELETE",
-          body: { id },
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        };
-      },
+      extraOptions: { maxRetries: 2 },
     }),
     getAllChats: builder.query<any, null>({
       queryFn: () => {
@@ -330,5 +419,7 @@ export const {
   useLazyGetAllPostsQuery,
   useDeletePostByIdMutation,
   useGetAllChatsQuery,
+  usePostImageMutation,
+  usePostAudioMutation,
+  usePostVideoMutation,
 } = servicesApi;
-

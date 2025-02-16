@@ -4,7 +4,7 @@ import { CameraIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useDispatch } from "react-redux";
-import { closeToast, openToast } from "../../redux/slice/toast/toast";
+import { openToast } from "../../redux/slice/toast/toast";
 
 export default function PickImageButton({
   handleSetPhotoPost,
@@ -22,9 +22,6 @@ export default function PickImageButton({
     
     if (status !== 'granted') {
       dispatch(openToast({ text: "Permission denied", type: "Failed" }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
       return;
     }
 

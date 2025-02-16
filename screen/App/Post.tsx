@@ -3,8 +3,8 @@ import React from 'react'
 
 export default function Post() {
   return (
-    <View style={{flex:1}}>
-    
+    <View style={{ flex: 1 }}>
+      <Text>Post</Text> 
     </View>
-  )
+  );
 }

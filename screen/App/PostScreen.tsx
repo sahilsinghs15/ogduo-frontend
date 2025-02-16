@@ -51,12 +51,15 @@ export default function PostScreen({ navigation, route }: ViewPost) {
   const [getSinglePost, singlePostResponse] = useLazyGetSinglePostQuery();
   useEffect(() => {
     if (params.id) {
+      console.log('Fetching comments for post ID:', params.id);
       getComments({ id: params.id })
         .unwrap()
         .then((r:any) => {
+          console.log('Comments fetched:', r);
           setComments(r.comment);
         })
         .catch((e:any) => {
+          console.error('Error fetching comments:', e);
           dispatch(
             openToast({ text: "Failed to get Comments", type: "Failed" })
           );
@@ -64,31 +67,45 @@ export default function PostScreen({ navigation, route }: ViewPost) {
             dispatch(closeToast());
           }, 2000);
         });
-    } else {
-      if (singlePostResponse.data?.posts)
-        getComments({ id: singlePostResponse.data?.posts.id })
-          .unwrap()
-          .then((r:any) => {
-            setComments(r.comment);
-          })
-          .catch((e:any) => {
-            dispatch(
-              openToast({ text: "Failed to get Comments", type: "Failed" })
-            );
-            setTimeout(() => {
-              dispatch(closeToast());
-            }, 2000);
-          });
+    } else if (singlePostResponse.data?.post) {
+      console.log('Fetching comments for single post:', singlePostResponse.data.post.id);
+      getComments({ id: singlePostResponse.data.post.id })
+        .unwrap()
+        .then((r:any) => {
+          console.log('Comments fetched:', r);
+          setComments(r.comment);
+        })
+        .catch((e:any) => {
+          console.error('Error fetching comments:', e);
+          dispatch(
+            openToast({ text: "Failed to get Comments", type: "Failed" })
+          );
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
+        });
     }
-  }, [params?.id]);
+  }, [params?.id, singlePostResponse.data?.post]);
 
   useEffect(() => {
-    if (!params?.id) {
-      getSinglePost({ id: params?.postId as string }).then((e:any) => {
-        console.log(e);
-      });
+    if (!params?.id && params?.postId) {
+      console.log('Fetching single post:', params.postId);
+      getSinglePost({ id: params.postId })
+        .unwrap()
+        .then((response) => {
+          console.log('Single post fetched:', response);
+        })
+        .catch((error) => {
+          console.error('Error fetching single post:', error);
+          dispatch(
+            openToast({ text: "Failed to get post", type: "Failed" })
+          );
+          setTimeout(() => {
+            dispatch(closeToast());
+          }, 2000);
+        });
     }
-  }, [params?.id]);
+  }, [params?.id, params?.postId]);
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -144,42 +161,42 @@ export default function PostScreen({ navigation, route }: ViewPost) {
           params.id ? (
             <FullScreenPost {...params} />
           ) : (
-            singlePostResponse.data?.posts && (
+            singlePostResponse.data?.post && (
               <FullScreenPost
-                  id={singlePostResponse.data?.posts.id}
-                  isReposted={singlePostResponse.data?.posts?.repostUser?.find(
+                  id={singlePostResponse.data?.post.id}
+                  isReposted={singlePostResponse.data?.post?.repostUser?.find(
                     (repostUser:any) => repostUser?.id === user?.id
                   )
                     ? true
                     : false}
-                  date={singlePostResponse.data?.posts.createdAt}
-                  link={singlePostResponse.data?.posts.link}
-                  comments={singlePostResponse.data?.posts._count?.comments}
-                  like={singlePostResponse.data?.posts._count?.like}
-                  isLiked={singlePostResponse.data?.posts?.like?.find(
+                  date={singlePostResponse.data?.post.createdAt}
+                  link={singlePostResponse.data?.post.link}
+                  comments={singlePostResponse.data?.post._count?.comments}
+                  like={singlePostResponse.data?.post._count?.like}
+                  isLiked={singlePostResponse.data?.post?.like?.find(
                     (like:any) => like?.userId === user?.id
                   )
                     ? true
                     : false}
-                  photo={singlePostResponse.data?.posts.photo
+                  photo={singlePostResponse.data?.post.photo
                     ? {
-                      uri: singlePostResponse.data?.posts.photo?.imageUri,
-                      width: singlePostResponse.data?.posts.photo?.imageWidth,
-                      height: singlePostResponse.data?.posts.photo?.imageHeight,
+                      uri: singlePostResponse.data?.post.photo?.imageUri,
+                      width: singlePostResponse.data?.post.photo?.imageWidth,
+                      height: singlePostResponse.data?.post.photo?.imageHeight,
                     }
                     : undefined}
-                  thumbNail={singlePostResponse.data?.posts.videoThumbnail}
-                  imageUri={singlePostResponse.data?.posts.user?.imageUri}
-                  name={singlePostResponse.data?.posts.user?.name}
-                  userId={singlePostResponse.data?.posts.user?.id}
-                  userTag={singlePostResponse.data?.posts.user?.userName}
-                  verified={singlePostResponse.data?.posts.user?.verified}
-                  audioUri={singlePostResponse.data?.posts.audioUri || undefined}
-                  photoUri={singlePostResponse.data?.posts.photoUri}
-                  videoTitle={singlePostResponse.data?.posts.videoTitle || undefined}
-                  videoUri={singlePostResponse.data?.posts.videoUri || undefined}
-                  postText={singlePostResponse.data?.posts.postText}
-                  videoViews={singlePostResponse.data?.posts.videoViews?.toString()} idx={0}              />
+                  thumbNail={singlePostResponse.data?.post.videoThumbnail}
+                  imageUri={singlePostResponse.data?.post.user?.imageUri}
+                  name={singlePostResponse.data?.post.user?.name}
+                  userId={singlePostResponse.data?.post.user?.id}
+                  userTag={singlePostResponse.data?.post.user?.userName}
+                  verified={singlePostResponse.data?.post.user?.verified}
+                  audioUri={singlePostResponse.data?.post.audioUri || undefined}
+                  photoUri={singlePostResponse.data?.post.photoUri}
+                  videoTitle={singlePostResponse.data?.post.videoTitle || undefined}
+                  videoUri={singlePostResponse.data?.post.videoUri || undefined}
+                  postText={singlePostResponse.data?.post.postText}
+                  videoViews={singlePostResponse.data?.post.videoViews?.toString()} idx={0}              />
             )
           )
         }

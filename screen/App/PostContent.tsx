@@ -29,9 +29,9 @@ import { useAppDispatch, useAppSelector } from "../../redux/hooks/hooks";
 import { ActivityIndicator } from "react-native-paper";
 import {
   usePostContentMutation,
-  useUploadAudioMutation,
-  useUploadVideoMutation,
-  useUploadPostMutation,
+  usePostImageMutation,
+  usePostAudioMutation,
+  usePostVideoMutation,
 } from "../../redux/api/services";
 import { closeToast, openToast } from "../../redux/slice/toast/toast";
 import {
@@ -56,12 +56,11 @@ import Constants from 'expo-constants';
 import { IPostContent } from "../../types/api";
 import uuid from 'react-native-uuid';
 
-
 const width = Dimensions.get("window").width;
 export default function PostContent({ navigation }: PostContentProp) {
   const dark = useGetMode();
   const dispatch = useAppDispatch();
-  const [photos, setPhotos] = useState<MediaLibrary.Asset[]>([]);
+  const [photos, setPhotos] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [postPhoto, setPostPhoto] = useState<{
     mimeType: string;
@@ -85,6 +84,7 @@ export default function PostContent({ navigation }: PostContentProp) {
     });
     setPostAudio(null);
   }
+
   const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
   const animatedStyles = useAnimatedStyle(() => ({
     bottom: keyboard.height.value,
@@ -101,66 +101,228 @@ export default function PostContent({ navigation }: PostContentProp) {
   const [done, setDone] = useState(true);
   const [videoTitle, setVideoTitle] = useState<string | undefined>(undefined);
   const { width } = useWindowDimensions();
-  function handleSetAudioPost(
-    mimeType: string,
-    uri: string,
-    size: number,
-    name: string
-  ) {
+
+  const [postContent] = usePostContentMutation();
+  const [postImage] = usePostImageMutation();
+  const [postAudioContent] = usePostAudioMutation();
+  const [postVideo] = usePostVideoMutation();
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [compressing, setCompressing] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  function handleSetAudioPost(mimeType: string, uri: string, size: number, name: string) {
     setPostAudio({
       mimeType,
       uri,
       size,
-      name: name,
+      name,
     });
     setPostPhoto(null);
   }
-  async function hasAndroidPermission() {
-    const getCheckPermissionPromise = () => {
-      if (Number(Platform.Version) >= 33) {
-        return Promise.all([
-          PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          ),
-          PermissionsAndroid.check(
-            PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO
-          ),
-        ]).then(
-          ([hasReadMediaImagesPermission, hasReadMediaVideoPermission]) =>
-            hasReadMediaImagesPermission && hasReadMediaVideoPermission
-        );
-      } else {
-        return PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-        );
-      }
-    };
 
-    const hasPermission = await getCheckPermissionPromise();
-    if (hasPermission) {
-      return true;
+  useEffect(() => {
+    if (postAudio) {
+      animationRef.current?.play();
     }
-    const getRequestPermissionPromise = () => {
-      if (Number(Platform.Version) >= 33) {
-        return PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-          PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-        ]).then(
-          (statuses) =>
-            statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES] ===
-              PermissionsAndroid.RESULTS.GRANTED &&
-            statuses[PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO] ===
-              PermissionsAndroid.RESULTS.GRANTED
-        );
-      } else {
-        return PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-        ).then((status) => status === PermissionsAndroid.RESULTS.GRANTED);
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.pause();
       }
     };
+  }, [postAudio]);
 
-    return await getRequestPermissionPromise();
-  }
+  useEffect(() => {
+    if (progress > 0.9) {
+      setProgress(0);
+    }
+  }, [progress]);
+
+  const handlePostContent = async () => {
+    try {
+      // Validate required postText field
+      if (!postText?.trim()) {
+        dispatch(openToast({ 
+          text: "Post text content is required", 
+          type: "Failed" 
+        }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
+        return;
+      }
+
+      setIsLoading(true);
+      setUploadProgress(0);
+      
+      // First determine the content type
+      const type = postPhoto 
+        ? postPhoto.mimeType === "image" 
+          ? "image" 
+          : postPhoto.mimeType?.startsWith("video/") 
+            ? "video" 
+            : postAudio 
+              ? "audio" 
+              : "text"
+        : postAudio 
+          ? "audio" 
+          : "text";
+
+      console.log('Content type:', type);
+      console.log('Post photo:', postPhoto);
+      console.log('Post photo mime type:', postPhoto?.mimeType);
+
+      let response;
+
+      try {
+        // For image posts
+        if (type === "image" && postPhoto) {
+          console.log('Preparing image upload...');
+          const photoBlob = {
+            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
+            type: 'image/jpeg',
+            name: postPhoto.uri.split("/").pop() || 'image.jpg'
+          };
+
+          console.log('Image blob:', photoBlob);
+          console.log('Post text:', postText.trim());
+
+          const formData = new FormData();
+          formData.append('postText', postText.trim());
+          formData.append('photo', {
+            uri: photoBlob.uri,
+            type: photoBlob.type,
+            name: photoBlob.name
+          } as any);
+
+          console.log('FormData created:', formData);
+
+          response = await postImage({
+            postText: postText.trim(),
+            photo: {
+              uri: photoBlob.uri,
+              type: photoBlob.type,
+              name: photoBlob.name
+            }
+          }).unwrap();
+
+          console.log('Image upload response:', response);
+
+          // Update UI with image dimensions from response
+          if (response.photo) {
+            setPhotoServer({
+              uri: response.photo.uri,
+              width: response.photo.width,
+              height: response.photo.height
+            });
+          }
+
+        } else if (type === "audio" && postAudio) {
+          console.log('Preparing audio upload...');
+          const audioBlob = {
+            uri: Platform.OS === 'android' ? postAudio.uri : postAudio.uri.replace('file://', ''),
+            type: postAudio.mimeType,
+            name: postAudio.name
+          };
+
+          console.log('Audio blob:', audioBlob);
+
+          response = await postAudioContent({
+            postText: postText.trim(),
+            audio: audioBlob
+          }).unwrap();
+
+          console.log('Audio upload response:', response);
+
+        } else if (type === "video" && postPhoto) {
+          console.log('Preparing video upload...');
+          if (!videoTitle?.trim()) {
+            dispatch(openToast({ 
+              text: "Video title is required", 
+              type: "Failed" 
+            }));
+            setTimeout(() => {
+              dispatch(closeToast());
+            }, 2000);
+            return;
+          }
+
+          const videoBlob = {
+            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
+            type: postPhoto.mimeType,
+            name: postPhoto.uri.split("/").pop() || 'video.mp4'
+          };
+
+          console.log('Video blob:', videoBlob);
+
+          response = await postVideo({
+            postText: postText.trim(),
+            video: videoBlob
+          }).unwrap();
+
+          console.log('Video upload response:', response);
+
+        } else {
+          // Text-only post
+          console.log('Preparing text-only post...');
+          console.log('Post text:', postText.trim());
+
+          response = await postContent({
+            postText: postText.trim()
+          }).unwrap();
+
+          console.log('Text post response:', response);
+        }
+
+        // Clear form state
+        setPostText(undefined);
+        setPostPhoto(null);
+        setPostAudio(null);
+        setVideoTitle(undefined);
+        setPhotoServer(undefined);
+        setVideoThumbnail(undefined);
+        setFTServer(undefined);
+        
+        dispatch(openToast({ text: "Posted successfully!", type: "Success" }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
+        navigation.goBack();
+
+      } catch (error: any) {
+        console.log('Post error:', error);
+        throw error; // Re-throw to be caught by outer catch
+      }
+
+    } catch (error: any) {
+      console.log('Post error:', error);
+      
+      // Handle validation errors from API
+      if (error.status === 400 && error.data?.errors) {
+        const firstError = error.data.errors[0];
+        dispatch(openToast({ 
+          text: firstError.msg || "Failed to create post", 
+          type: "Failed" 
+        }));
+      } else {
+        dispatch(openToast({ 
+          text: "Failed to create post", 
+          type: "Failed" 
+        }));
+      }
+      
+      setTimeout(() => {
+        dispatch(closeToast());
+      }, 2000);
+    } finally {
+      setIsLoading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handlePostText = (text: string) => {
+    setPostText(text);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -193,9 +355,6 @@ export default function PostContent({ navigation }: PostContentProp) {
             text: "Unable to access media library", 
             type: "Failed" 
           }));
-          setTimeout(() => {
-            dispatch(closeToast());
-          }, 2000);
         }
       }
     }
@@ -206,188 +365,6 @@ export default function PostContent({ navigation }: PostContentProp) {
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (postAudio) {
-      animationRef.current?.play();
-    }
-
-    return () => {
-      animationRef.current?.pause;
-    };
-  }, [postAudio]);
-
-  const [uploadPost] = useUploadPostMutation();
-  const [audio] = useUploadAudioMutation();
-  const [video] = useUploadVideoMutation();
-  const [postContent] = usePostContentMutation();
-  useEffect(() => {
-    if (postPhoto?.mimeType.startsWith("image/")) {
-      console.log("Starting image upload...");
-      setIsLoading(true);
-      setDone(false);
-      uploadPost({
-        type: 'image',
-        content: postPhoto,
-        caption: postText
-      })
-        .unwrap()
-        .then((r:any) => {
-          console.log("Image upload success:", r);
-          setDone(true);
-          setIsLoading(false);
-          setPhotoServer(r.photo);
-        })
-        .catch((e:any) => {
-          console.log("Image upload failed:", e);
-          setDone(true);
-          setIsLoading(false);
-          dispatch(openToast({ 
-            text: e.error || "Photo upload failed", 
-            type: "Failed"
-          }));
-          setTimeout(() => {
-            dispatch(closeToast());
-          }, 2000);
-        });
-    }
-    if (postAudio) {
-      console.log(
-        "🚀 ~ file: PostContent.tsx:206 ~ useEffect ~ postAudio:",
-        postAudio
-      );
-      setDone(false);
-      audio({
-        audio: postAudio,
-        caption: postText
-      })
-        .unwrap()
-        .then((r:any) => {
-          setDone(true);
-          setFTServer(r.audio);
-        })
-        .catch((e:any) => {
-          console.log("🚀 ~ file: PostContent.tsx:206 ~ useEffect ~ e:", e);
-          setDone(true);
-
-          dispatch(openToast({ text: "Audio didn't upload", type: "Failed" }));
-          setTimeout(() => {
-            dispatch(closeToast());
-          }, 2000);
-        });
-    }
-    if (postPhoto?.mimeType.startsWith("video/")) {
-      setDone(false);
-      video(postPhoto)
-        .unwrap()
-        .then((r:any) => {
-          console.log("🚀 ~ file: PostContent.tsx:229 ~ .then ~ r:", r)
-
-          setDone(true);
-          setFTServer(r.video);
-          setVideoThumbnail(r.thumbNail);
-        })
-        .catch((e:any) => {
-          console.log("🚀 ~ file: PostContent.tsx:236 ~ useEffect ~ e:", e)
-
-          setDone(true);
-
-          dispatch(openToast({ text: "video didn't upload", type: "Failed" }));
-          setTimeout(() => {
-            dispatch(closeToast());
-          }, 2000);
-        }); 
-    }
-  }, [postPhoto, postAudio]);
-
-  const handlePostText = (text: string) => {
-    setPostText(text);
-  };
-
-  const handlePostContent = async () => {
-    try {
-      setIsLoading(true);
-      console.log("Post button clicked");
-      
-      // Check if we have a photo to upload
-      if (postPhoto?.mimeType?.startsWith("image/")) {
-        console.log("Handling image post");
-        if (!photoServer?.uri) {
-          // Wait for photo upload to complete
-          console.log("Uploading photo first...");
-          const uploadResult = await uploadPost({
-            type: 'image',
-            content: postPhoto,
-            caption: postText
-          }).unwrap();
-          
-          console.log("Upload result:", uploadResult);
-          setPhotoServer(uploadResult.photo);
-          
-          // Now create the post with the uploaded photo
-          const payload: IPostContent = {
-            type: "image",
-            caption: postText,
-            photo: {
-              id: uuid.v4() as string,
-              uri: uploadResult.photo.uri,
-              height: uploadResult.photo.height,
-              width: uploadResult.photo.width,
-            } 
-          };
-
-          console.log("Sending image payload:", payload);
-          const response = await postContent(payload).unwrap();
-          console.log("Post response:", response);
-        }
-      } else if (postText) {
-        // Handle text-only post
-        console.log("Handling text post");
-        const payload: IPostContent = {
-          type: "text",
-          caption: postText
-        };
-
-        console.log("Sending text payload:", payload);
-        const response = await postContent(payload).unwrap();
-        console.log("Post response:", response);
-      }
-
-      dispatch(openToast({ text: "Posted successfully!", type: "Success" }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
-      navigation.goBack();
-
-    } catch (error) {
-      console.log('Post error:', error);
-      dispatch(openToast({ text: "Failed to create post", type: "Failed" }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const [progress, setProgress] = useState(0);
-  console.log(
-    "🚀 ~ file: PostContent.tsx:348 ~ PostContent ~ progress:",
-    progress
-  );
-
-  const [compressing, setCompressing] = useState(false);
-  console.log(
-    "🚀 ~ file: PostContent.tsx:338 ~ PostContent ~ compressing:",
-    compressing
-  );
-
-  useEffect(() => {
-    if (progress > 0.9) {
-      setProgress(0);
-    }
-  }, [progress]);
-
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   return (
     <AnimatedScreen>

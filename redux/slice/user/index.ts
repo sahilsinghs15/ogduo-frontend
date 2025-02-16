@@ -89,7 +89,7 @@ export const userSlice = createSlice({
       userApi.endpoints.tokenValid.matchRejected,
       (state, action) => {
         // Only clear token on explicit 401 errors
-        if (action.error && action.error.message && action.error.message.includes('401')) {
+        if (action.error.message === '401') {
           state.token = null;
         }
         // Ignore other errors

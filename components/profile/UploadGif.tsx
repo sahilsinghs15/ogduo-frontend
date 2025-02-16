@@ -4,7 +4,7 @@ import { CameraIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { closeToast, openToast } from "../../redux/slice/toast/toast";
+import { openToast } from "../../redux/slice/toast/toast";
 import { useMediaPermissions } from '../../hooks/useMediaPermissions';
 
 export default function PickGifButton({
@@ -36,9 +36,6 @@ export default function PickGifButton({
         if (asset.fileSize && asset.fileSize > 1200000 || 
             asset.mimeType !== "image/gif") {
           dispatch(openToast({ text: "Gif of 1MB only!", type: "Failed" }));
-          setTimeout(() => {
-            dispatch(closeToast());
-          }, 2000);
           return;
         }
 
@@ -50,9 +47,6 @@ export default function PickGifButton({
       }
     } catch (error) {
       dispatch(openToast({ text: "Failed to select GIF", type: "Failed" }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
     }
   };
 

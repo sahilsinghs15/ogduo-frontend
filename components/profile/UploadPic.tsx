@@ -4,7 +4,7 @@ import { CameraIcon } from "../icons";
 import * as ImagePicker from 'expo-image-picker';
 import useGetMode from "../../hooks/GetMode";
 import { useAppDispatch } from "../../redux/hooks/hooks";
-import { closeToast, openToast } from "../../redux/slice/toast/toast";
+import { openToast } from "../../redux/slice/toast/toast";
 import { useMediaPermissions } from '../../hooks/useMediaPermissions';
 
 export default function UploadPic({
@@ -39,9 +39,6 @@ export default function UploadPic({
       }
     } catch (error) {
       dispatch(openToast({ text: "Failed to select image", type: "Failed" }));
-      setTimeout(() => {
-        dispatch(closeToast());
-      }, 2000);
     }
   };
 
