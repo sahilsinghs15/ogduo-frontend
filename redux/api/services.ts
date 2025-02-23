@@ -211,14 +211,14 @@ export const servicesApi = createApi({
 
     postAudio: builder.mutation<
       { msg: string },
-      { postText: string; audio: { uri: string; type: string; name: string } }
+      { postText: string; audio: { audioUri: string; type: string; name: string } }
     >({
       query: (payload) => {
         console.log('postAudio mutation called with payload:', payload);
         const formData = new FormData();
         formData.append('postText', payload.postText);
         formData.append('audio', {
-          uri: payload.audio.uri,
+          audioUri: payload.audio.audioUri,
           type: payload.audio.type,
           name: payload.audio.name
         } as any);
@@ -236,15 +236,16 @@ export const servicesApi = createApi({
     }),
 
     postVideo: builder.mutation<
-      { msg: string },
-      { postText: string; video: { uri: string; type: string; name: string } }
+    { msg: string; video?: { videoUri: string; name: string; type: string} },
+    { postText: string; videoTitle: string; video: { videoUri: string; type: string; name: string } }
     >({
       query: (payload) => {
         console.log('postVideo mutation called with payload:', payload);
         const formData = new FormData();
         formData.append('postText', payload.postText);
+        formData.append('videoTitle', payload.videoTitle);
         formData.append('video', {
-          uri: payload.video.uri,
+          videoUri : payload.video.videoUri,
           type: payload.video.type,
           name: payload.video.name
         } as any);
@@ -258,6 +259,7 @@ export const servicesApi = createApi({
           },
         };
       },
+     
       invalidatesTags: ["post"],
     }),
 

@@ -73,6 +73,12 @@ export default function PostContent({ navigation }: PostContentProp) {
     name: string;
     size: number;
   } | null>(null);
+
+  const [postVideo, setPostVideo] = useState<{
+    mimeType: string;
+    videoUri: string;
+    name: string;
+  } | null>(null);
   const backgroundColor = dark ? "white" : "black";
   const animationRef = useRef<Lottie>(null);
 
@@ -105,7 +111,7 @@ export default function PostContent({ navigation }: PostContentProp) {
   const [postContent] = usePostContentMutation();
   const [postImage] = usePostImageMutation();
   const [postAudioContent] = usePostAudioMutation();
-  const [postVideo] = usePostVideoMutation();
+  const [postVideoContent] = usePostVideoMutation();
 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [compressing, setCompressing] = useState(false);
@@ -155,86 +161,24 @@ export default function PostContent({ navigation }: PostContentProp) {
       setIsLoading(true);
       setUploadProgress(0);
       
-      // First determine the content type
-      const type = postPhoto 
-        ? postPhoto.mimeType === "image" 
-          ? "image" 
-          : postPhoto.mimeType?.startsWith("video/") 
-            ? "video" 
-            : postAudio 
-              ? "audio" 
-              : "text"
-        : postAudio 
-          ? "audio" 
-          : "text";
+      // Determine the content type based on the presence of content
+      let type = "text";
+      if (postVideo && postVideo.mimeType.startsWith('video')) {
+        type = "video";
+      } else if (postPhoto && postPhoto.mimeType.startsWith('image')) {
+        type = "image";
+      } else if (postAudio && postAudio.mimeType.startsWith('audio')) {
+        type = "audio";
+      }
 
       console.log('Content type:', type);
-      console.log('Post photo:', postPhoto);
-      console.log('Post photo mime type:', postPhoto?.mimeType);
+      console.log('Post Content:', postVideo || postPhoto || postAudio);
 
       let response;
 
       try {
-        // For image posts
-        if (type === "image" && postPhoto) {
-          console.log('Preparing image upload...');
-          const photoBlob = {
-            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
-            type: 'image/jpeg',
-            name: postPhoto.uri.split("/").pop() || 'image.jpg'
-          };
-
-          console.log('Image blob:', photoBlob);
-          console.log('Post text:', postText.trim());
-
-          const formData = new FormData();
-          formData.append('postText', postText.trim());
-          formData.append('photo', {
-            uri: photoBlob.uri,
-            type: photoBlob.type,
-            name: photoBlob.name
-          } as any);
-
-          console.log('FormData created:', formData);
-
-          response = await postImage({
-            postText: postText.trim(),
-            photo: {
-              uri: photoBlob.uri,
-              type: photoBlob.type,
-              name: photoBlob.name
-            }
-          }).unwrap();
-
-          console.log('Image upload response:', response);
-
-          // Update UI with image dimensions from response
-          if (response.photo) {
-            setPhotoServer({
-              uri: response.photo.uri,
-              width: response.photo.width,
-              height: response.photo.height
-            });
-          }
-
-        } else if (type === "audio" && postAudio) {
-          console.log('Preparing audio upload...');
-          const audioBlob = {
-            uri: Platform.OS === 'android' ? postAudio.uri : postAudio.uri.replace('file://', ''),
-            type: postAudio.mimeType,
-            name: postAudio.name
-          };
-
-          console.log('Audio blob:', audioBlob);
-
-          response = await postAudioContent({
-            postText: postText.trim(),
-            audio: audioBlob
-          }).unwrap();
-
-          console.log('Audio upload response:', response);
-
-        } else if (type === "video" && postPhoto) {
+        // Handle video posts
+        if (type === "video" && postVideo) {
           console.log('Preparing video upload...');
           if (!videoTitle?.trim()) {
             dispatch(openToast({ 
@@ -248,25 +192,69 @@ export default function PostContent({ navigation }: PostContentProp) {
           }
 
           const videoBlob = {
-            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
-            type: postPhoto.mimeType,
-            name: postPhoto.uri.split("/").pop() || 'video.mp4'
+            uri: Platform.OS === 'android' ? postVideo.videoUri : postVideo.videoUri.replace('file://', ''),
+            type: postVideo.mimeType,
+            name: postVideo.videoUri.split("/").pop() || 'video.mp4'
           };
 
           console.log('Video blob:', videoBlob);
-
-          response = await postVideo({
+          const formData = new FormData();
+          formData.append('postText', postText.trim());
+          formData.append('videoTitle', videoTitle.trim())
+          formData.append('video', {
+            videoUri: videoBlob.uri,
+            type: videoBlob.type,
+            name: videoBlob.name
+          } as any);
+          response = await postVideoContent({
             postText: postText.trim(),
-            video: videoBlob
+            videoTitle: videoTitle.trim(),
+            video: {
+              videoUri: videoBlob.uri,
+              type: videoBlob.type,
+              name: videoBlob.name
+            }
           }).unwrap();
 
           console.log('Video upload response:', response);
 
+        } else if (type === "image" && postPhoto) {
+          console.log('Preparing image upload...');
+          const photoBlob = {
+            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
+            type: 'image/jpeg',
+            name: postPhoto.uri.split("/").pop() || 'image.jpg',
+          };
+
+          response = await postImage({
+            postText: postText.trim(),
+            photo: photoBlob
+          }).unwrap();
+
+          console.log('Image upload response:', response);
+
+        } else if (type === "audio" && postAudio) {
+          console.log('Preparing audio upload...');
+          const audioBlob = {
+            uri: Platform.OS === 'android' ? postAudio.uri : postAudio.uri.replace('file://', ''),
+            type: postAudio.mimeType,
+            name: postAudio.name,
+          };
+
+          response = await postAudioContent({
+            postText: postText.trim(),
+            audio: {
+              audioUri: audioBlob.uri,
+              type: audioBlob.type,
+              name: audioBlob.name
+            }
+          }).unwrap();
+
+          console.log('Audio upload response:', response);
+
         } else {
           // Text-only post
           console.log('Preparing text-only post...');
-          console.log('Post text:', postText.trim());
-
           response = await postContent({
             postText: postText.trim()
           }).unwrap();
@@ -274,24 +262,46 @@ export default function PostContent({ navigation }: PostContentProp) {
           console.log('Text post response:', response);
         }
 
-        // Clear form state
+        dispatch(openToast({ text: "Posted successfully!", type: "Success" }));
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
+
+        // Reset form state
         setPostText(undefined);
         setPostPhoto(null);
         setPostAudio(null);
+        setPostVideo(null);
         setVideoTitle(undefined);
         setPhotoServer(undefined);
         setVideoThumbnail(undefined);
         setFTServer(undefined);
         
-        dispatch(openToast({ text: "Posted successfully!", type: "Success" }));
-        setTimeout(() => {
-          dispatch(closeToast());
-        }, 2000);
         navigation.goBack();
 
       } catch (error: any) {
         console.log('Post error:', error);
-        throw error; // Re-throw to be caught by outer catch
+        
+        // Handle validation errors from API
+        if (error.status === 400 && error.data?.errors) {
+          const firstError = error.data.errors[0];
+          dispatch(openToast({ 
+            text: firstError.msg || "Failed to create post", 
+            type: "Failed" 
+          }));
+        } else {
+          dispatch(openToast({ 
+            text: "Failed to create post", 
+            type: "Failed" 
+          }));
+        }
+        
+        setTimeout(() => {
+          dispatch(closeToast());
+        }, 2000);
+      } finally {
+        setIsLoading(false);
+        setUploadProgress(0);
       }
 
     } catch (error: any) {
