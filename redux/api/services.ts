@@ -236,31 +236,93 @@ export const servicesApi = createApi({
     }),
 
     postVideo: builder.mutation<
-    { msg: string; video?: { videoUri: string; name: string; type: string} },
-    { postText: string; videoTitle: string; video: { videoUri: string; type: string; name: string } }
+      { message: string; video?: { uri: string; width: number; height: number }, videoTitle?: string },
+      { video: { uri: string; type: string; name: string; size?: number }; postText: string; videoTitle: string }
     >({
       query: (payload) => {
-        console.log('postVideo mutation called with payload:', payload);
         const formData = new FormData();
+        
+        // Create video file object for upload
+        if (payload.video) {
+          // Log detailed video file information
+          console.log('Video file details before FormData:', {
+            uri: payload.video.uri,
+            type: payload.video.type,
+            name: payload.video.name,
+            size: payload.video.size
+          });
+
+          formData.append('video', {
+            uri: payload.video.uri,
+            type: 'video/mp4',
+            name: payload.video.name,
+            size: payload.video.size
+          } as any);
+        }
+        
         formData.append('postText', payload.postText);
         formData.append('videoTitle', payload.videoTitle);
-        formData.append('video', {
-          videoUri : payload.video.videoUri,
-          type: payload.video.type,
-          name: payload.video.name
-        } as any);
+
+        // Log complete request details
+        console.log('Complete request details:', {
+          url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/video`,
+          videoDetails: formData.get('video'),
+          postText: formData.get('postText'),
+          videoTitle: formData.get('videoTitle')
+        });
 
         return {
           url: `${process.env.EXPO_PUBLIC_API_URL}/api/services/post/video`,
           method: "POST",
           body: formData,
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
+            Accept: "application/json",
           },
+          // Increase timeout for larger files
+          timeout: 120000, // 2 minutes
         };
       },
-     
-      invalidatesTags: ["post"],
+      transformErrorResponse: (response: any) => {
+        // Enhanced error logging
+        console.log('Video upload error full response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data,
+          headers: response.headers,
+          error: response.error
+        });
+
+        if (response.status === 500) {
+          return { 
+            error: 'Server error while uploading video. The video may be too large or in an unsupported format.',
+            details: {
+              message: response.data?.message,
+              status: response.status,
+              additionalInfo: response.data
+            }
+          };
+        }
+        if (response.status === 400) {
+          return { 
+            error: 'Invalid video upload request. Please check the video format and size.',
+            details: {
+              message: response.data?.message,
+              status: response.status,
+              additionalInfo: response.data
+            }
+          };
+        }
+        return { 
+          error: 'Failed to upload video. Please try again with a different video.',
+          details: {
+            message: response.data?.message,
+            status: response.status,
+            additionalInfo: response.data
+          }
+        };
+      },
+      invalidatesTags: ['post']
     }),
 
     postComment: builder.mutation<

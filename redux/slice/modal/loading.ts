@@ -9,7 +9,7 @@ const loadingModal = createSlice({
     isOpen: false,
   } as LoadingModal,
   reducers: {
-    openLoadingModal: (state) => {
+    openLoadingModal: (state , action : PayloadAction<string>) => {
       state.isOpen = true;
     },
     closeLoadingModal: (state) => {

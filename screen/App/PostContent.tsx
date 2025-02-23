@@ -76,8 +76,9 @@ export default function PostContent({ navigation }: PostContentProp) {
 
   const [postVideo, setPostVideo] = useState<{
     mimeType: string;
-    videoUri: string;
+    uri: string;
     name: string;
+    size : number
   } | null>(null);
   const backgroundColor = dark ? "white" : "black";
   const animationRef = useRef<Lottie>(null);
@@ -117,6 +118,44 @@ export default function PostContent({ navigation }: PostContentProp) {
   const [compressing, setCompressing] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const [isVideoReady, setIsVideoReady] = useState(false);
+
+  useEffect(() => {
+    if (postPhoto?.mimeType === 'video/mp4') {
+      setIsVideoReady(false);
+      // Create a video element to check if the video is loaded
+      const checkVideo = async () => {
+        try {
+          if (!postPhoto?.uri) return;
+          
+          dispatch(openLoadingModal("Preparing video..."));
+          // Wait for a short time to ensure the video file is ready
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const response = await fetch(postPhoto.uri);
+          const blob = await response.blob();
+          
+          if (blob.size > 0) {
+            setIsVideoReady(true);
+            dispatch(closeLoadingModal());
+          } else {
+            throw new Error('Video file is empty');
+          }
+        } catch (error) {
+          console.error('Error preparing video:', error);
+          dispatch(closeLoadingModal());
+          dispatch(openToast({ 
+            text: "Error preparing video. Please try again.", 
+            type: "Failed" 
+          }));
+          setIsVideoReady(false);
+        }
+      };
+      
+      checkVideo();
+    }
+  }, [postPhoto]);
+
   function handleSetAudioPost(mimeType: string, uri: string, size: number, name: string) {
     setPostAudio({
       mimeType,
@@ -144,6 +183,29 @@ export default function PostContent({ navigation }: PostContentProp) {
     }
   }, [progress]);
 
+  const prepareVideoForUpload = async (uri: string): Promise<Blob | null> => {
+    try {
+      dispatch(openLoadingModal("Preparing video..."));
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error('Video file is empty');
+      }
+      
+      return blob;
+    } catch (error) {
+      console.error('Error preparing video:', error);
+      dispatch(openToast({ 
+        text: "Error preparing video. Please try again.", 
+        type: "Failed" 
+      }));
+      return null;
+    } finally {
+      dispatch(closeLoadingModal());
+    }
+  };
+
   const handlePostContent = async () => {
     try {
       // Validate required postText field
@@ -163,11 +225,11 @@ export default function PostContent({ navigation }: PostContentProp) {
       
       // Determine the content type based on the presence of content
       let type = "text";
-      if (postVideo && postVideo.mimeType.startsWith('video')) {
+      if (postPhoto?.mimeType === 'video/mp4') {
         type = "video";
-      } else if (postPhoto && postPhoto.mimeType.startsWith('image')) {
+      } else if (postPhoto?.mimeType.startsWith('image')) {
         type = "image";
-      } else if (postAudio && postAudio.mimeType.startsWith('audio')) {
+      } else if (postAudio?.mimeType.startsWith('audio')) {
         type = "audio";
       }
 
@@ -178,7 +240,7 @@ export default function PostContent({ navigation }: PostContentProp) {
 
       try {
         // Handle video posts
-        if (type === "video" && postVideo) {
+        if (type === "video") {
           console.log('Preparing video upload...');
           if (!videoTitle?.trim()) {
             dispatch(openToast({ 
@@ -191,33 +253,50 @@ export default function PostContent({ navigation }: PostContentProp) {
             return;
           }
 
-          const videoBlob = {
-            uri: Platform.OS === 'android' ? postVideo.videoUri : postVideo.videoUri.replace('file://', ''),
-            type: postVideo.mimeType,
-            name: postVideo.videoUri.split("/").pop() || 'video.mp4'
+          if (!postPhoto?.uri) {
+            dispatch(openToast({ 
+              text: "Video file not found", 
+              type: "Failed" 
+            }));
+            setIsLoading(false);
+            return;
+          }
+
+          // Prepare the video file
+          const videoBlob = await prepareVideoForUpload(postPhoto.uri);
+          if (!videoBlob) {
+            setIsLoading(false);
+            return;
+          }
+
+          // Create video file object in the exact format backend expects
+          const videoFile = {
+            uri: Platform.OS === 'android' ? postPhoto.uri : postPhoto.uri.replace('file://', ''),
+            type: 'video/mp4',
+            name: postPhoto.uri.split("/").pop() || 'video.mp4',
+            size: videoBlob.size
           };
 
-          console.log('Video blob:', videoBlob);
-          const formData = new FormData();
-          formData.append('postText', postText.trim());
-          formData.append('videoTitle', videoTitle.trim())
-          formData.append('video', {
-            videoUri: videoBlob.uri,
-            type: videoBlob.type,
-            name: videoBlob.name
-          } as any);
-          response = await postVideoContent({
-            postText: postText.trim(),
-            videoTitle: videoTitle.trim(),
-            video: {
-              videoUri: videoBlob.uri,
-              type: videoBlob.type,
-              name: videoBlob.name
-            }
-          }).unwrap();
+          console.log('Prepared video file:', JSON.stringify(videoFile, null, 2));
 
-          console.log('Video upload response:', response);
+          try {
+            response = await postVideoContent({
+              postText: postText.trim(),
+              videoTitle: videoTitle.trim(),
+              video: videoFile
+            }).unwrap();
 
+            console.log('Video upload success:', response);
+          } catch (error: any) {
+            console.error('Video upload error details:', {
+              status: error?.status,
+              data: error?.data,
+              message: error?.message
+            });
+            throw error;
+          }
+
+          dispatch(closeLoadingModal());
         } else if (type === "image" && postPhoto) {
           console.log('Preparing image upload...');
           const photoBlob = {
