@@ -23,7 +23,7 @@ import PickImageButton from "../../components/postContent/PickImageButton";
 import VideoTextArea from "../../components/postContent/VideoTextArea";
 import RingAudio from "../../components/home/post/components/RingAudio";
 import Lottie from "lottie-react-native";
-import PickAudioButton from "../../components/postContent/PickAudioButton";
+// import PickAudioButton from "../../components/postContent/PickAudioButton";
 import axios from "axios";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks/hooks";
 import { ActivityIndicator } from "react-native-paper";
@@ -614,14 +614,14 @@ export default function PostContent({ navigation }: PostContentProp) {
             <FlatList
               horizontal
               ListHeaderComponent={
-                <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flexDirection: "row", gap: 40 , marginLeft : 55 }}>
                   <PickImageButton handleSetPhotoPost={handleSetPhotoPost} />
                   <PickVideoButton
                     handleSetPhotoPost={handleSetPhotoPost}
                     setProgress={setProgress}
                     setIsCompressing={setCompressing}
                   />
-                  <PickAudioButton handleSetAudioPost={handleSetAudioPost} />
+                  {/* <PickAudioButton handleSetAudioPost={handleSetAudioPost} /> */}
                 </View>
               }
               showsHorizontalScrollIndicator={false}

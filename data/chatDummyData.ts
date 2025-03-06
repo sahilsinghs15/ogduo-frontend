@@ -1,6 +1,7 @@
+import { ChatList } from "../redux/slice/chat/chatlist";
 import { ChatType } from "../types/app";
 
-export const initialDummyChat: ChatType[] = [
+export const initialDummyChat = [
   {
     id: "0",
     user: {
