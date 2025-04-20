@@ -2,9 +2,7 @@
 
 Welcome to the Social Media App, a mobile application developed using React Native. This app allows users to connect with friends, share posts, photos, and engage in meaningful conversations.
 
-https://github.com/ElSierra/Social-app-React-Native/assets/25958179/1e8a6f1e-68a3-4bb5-bfcd-2885c44bbe95
-
-Backend App - [GitHub Repository](https://github.com/ElSierra/SocialApp-NodeJS)
+Backend App - [GitHub Repository]()
 
 ## Features
 
@@ -25,9 +23,9 @@ Backend App - [GitHub Repository](https://github.com/ElSierra/SocialApp-NodeJS)
 
 ## Getting Started
 
-**Note:** Start the backend server on Port 80 - [Qui Express Backend App](https://github.com/ElSierra/SocialApp-NodeJS)
+**Note:** Start the backend server on Port 80 - [ Express Backend App]()
 
-1. Clone this repository: `git clone https://github.com/ElSierra/Social-app-React-Native`
+1. Clone this repository: `git clone `
 2. Navigate to the project directory: `cd Social-app-React-Native`
 3. Install dependencies: `bun install`
 4. Create a `.env` file in the root directory and set up your environment variables:
